@@ -1,38 +1,45 @@
-import { createBrowserRouter } from "react-router-dom";
-import AppLayout from "./layouts/AppLayout";
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import LandingLayout from "./layouts/LandingLayout";
+import AuthLayout from "./layouts/AuthLayout";
 import Home from "../features/home/pages/Home";
 import NotFound from "../pages/NotFound";
 import PublicRoute from "../routes/PublicRoute";
 import PrivateRoute from "../routes/PrivateRoute";
 import Login from "../features/auth/pages/Login";
 import Register from "../features/auth/pages/Register";
-import About from "../features/about/pages/About";
+
 export const router = createBrowserRouter([
-  // Public pages: no authentication required
   {
     path: "/",
-    element: <AppLayout />,
-    children: [
-      { index: true, element: <Home /> },
-      { path: "about", element: <About /> },
-    ],
+    element: <LandingLayout />,
+    children: [{ index: true, element: <Home /> }],
   },
 
-  // Guest-only pages
   {
     element: <PublicRoute />,
     children: [
-      { path: "/login", element: <Login /> },
-      { path: "/register", element: <Register /> },
+      {
+        element: <AuthLayout />,
+        children: [
+          { path: "/login", element: <Login /> },
+          { path: "/register", element: <Register /> },
+        ],
+      },
     ],
   },
 
-  // Protected pages
+  {
+    path: "/about",
+    element: <Navigate to="/#about" replace />,
+  },
+
   {
     element: <PrivateRoute />,
     children: [],
   },
 
-  // Fallback
-  { path: "*", element: <NotFound /> },
+  {
+    path: "*",
+    element: <NotFound />,
+  },
 ]);
