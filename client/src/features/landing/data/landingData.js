@@ -32,9 +32,8 @@ import {
 
 export const navLinks = [
   { label: "Home", href: "#home" },
-  { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
-  { label: "Insights", href: "#insights" },
+  { label: "Features", href: "#features" },
   { label: "About", href: "#about" },
 ];
 
@@ -305,9 +304,8 @@ export const footerColumns = [
     title: "Quick Links",
     links: [
       { label: "Home", href: "#home" },
-      { label: "Features", href: "#features" },
       { label: "How It Works", href: "#how-it-works" },
-      { label: "Insights", href: "#insights" },
+      { label: "Features", href: "#features" },
       { label: "About", href: "#about" },
     ],
   },
@@ -316,8 +314,8 @@ export const footerColumns = [
     links: [
       { label: "Reporting", href: "#features" },
       { label: "Tracking", href: "#how-it-works" },
-      { label: "Analytics", href: "#insights" },
-      { label: "Hotspot Monitoring", href: "#insights" },
+      { label: "Analytics", href: "#features" },
+      { label: "Hotspot Monitoring", href: "#features" },
     ],
   },
   {
