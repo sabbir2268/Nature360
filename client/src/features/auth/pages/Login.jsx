@@ -1,23 +1,78 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { AlertCircle, ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 import Button from "../../../components/ui/Button";
+import GoogleIcon from "../../../components/ui/GoogleIcon";
 import TextField from "../../../components/ui/TextField";
 import { PATHS } from "../../../utils/paths";
+import {
+  getAuthErrorMessage,
+  loginUser,
+  loginWithGoogle,
+  sendResetEmail,
+} from "../services/authServices";
 
 function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
-  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState(location.state?.message || "");
+  const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleChange = (event) => {
     setFormData({ ...formData, [event.target.name]: event.target.value });
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setNotice("Demo only — authentication is not connected yet.");
+    setError("");
+    setNotice("");
+    setSubmitting(true);
+
+    try {
+      await loginUser({ ...formData, remember });
+      const destination = location.state?.from?.pathname || PATHS.DASHBOARD;
+      navigate(destination, { replace: true });
+    } catch (authError) {
+      setError(getAuthErrorMessage(authError));
+      setSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError("");
+    setNotice("");
+
+    if (!formData.email.trim()) {
+      setError("Enter your email address first, then tap “Forgot password?” again.");
+      return;
+    }
+
+    try {
+      await sendResetEmail(formData.email);
+      setNotice("Password reset link sent. Check your inbox (and spam folder).");
+    } catch (resetError) {
+      setError(getAuthErrorMessage(resetError));
+    }
+  };
+
+  const handleGoogle = async () => {
+    setError("");
+    setNotice("");
+    setGoogleLoading(true);
+
+    try {
+      await loginWithGoogle();
+      // PublicRoute redirects the authenticated user to their profile.
+    } catch (googleError) {
+      const message = getAuthErrorMessage(googleError);
+      if (message) setError(message);
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -33,7 +88,27 @@ function Login() {
         your community.
       </p>
 
-      <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        onClick={handleGoogle}
+        disabled={googleLoading || submitting}
+        className="mt-6 w-full gap-2.5"
+      >
+        <GoogleIcon className="h-4 w-4" />
+        {googleLoading ? "Connecting to Google…" : "Continue with Google"}
+      </Button>
+
+      <div className="my-5 flex items-center gap-3">
+        <span className="h-px flex-1 bg-forest-900/10" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+          or use email
+        </span>
+        <span className="h-px flex-1 bg-forest-900/10" />
+      </div>
+
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <TextField
           id="login-email"
           label="Email address"
@@ -82,28 +157,39 @@ function Login() {
           </label>
           <button
             type="button"
-            onClick={() => setNotice("Password reset is not connected in this demo.")}
+            onClick={handleForgotPassword}
             className="text-[11px] font-bold text-emerald-700 transition-colors hover:text-forest-900 hover:underline"
           >
             Forgot password?
           </button>
         </div>
 
-        <Button type="submit" size="lg" className="group w-full">
-          Sign in
+        <Button type="submit" size="lg" className="group w-full" disabled={submitting}>
+          {submitting ? "Signing in…" : "Sign in"}
           <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
         </Button>
-
-        {notice && (
-          <p
-            role="status"
-            aria-live="polite"
-            className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] font-medium text-amber-800"
-          >
-            {notice}
-          </p>
-        )}
       </form>
+
+      {error && (
+        <p
+          role="alert"
+          className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-[11px] font-medium text-rose-700"
+        >
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {error}
+        </p>
+      )}
+
+      {notice && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-[11px] font-medium text-emerald-800"
+        >
+          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {notice}
+        </p>
+      )}
 
       <p className="mt-6 text-center text-[12px] text-slate-500">
         New to EcoTrack?{" "}
@@ -115,7 +201,8 @@ function Login() {
       <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-forest-900/[0.07] bg-white/50 p-3">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
         <p className="text-[10px] leading-5 text-slate-500">
-          This is a demo form. No credentials are sent or stored.
+          Your credentials are handled securely by Firebase Authentication and are never stored in
+          this app.
         </p>
       </div>
     </div>

@@ -4,9 +4,12 @@ import { ArrowUpRight, LogIn, Menu, X } from "lucide-react";
 import Logo from "../../../components/common/Logo";
 import Button from "../../../components/ui/Button";
 import { navLinks } from "../data/landingData";
+import { useAuth } from "../../auth/hooks/useAuth";
+import { PATHS } from "../../../utils/paths";
 import { cn } from "../../../utils/cn";
 
 function Navbar() {
+  const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -33,13 +36,13 @@ function Navbar() {
       <nav
         aria-label="Primary navigation"
         className={cn(
-          "relative mx-auto flex max-w-7xl items-center justify-between gap-4 rounded-2xl border px-4 py-3 transition-all duration-500 sm:px-5",
+          "relative mx-auto flex max-w-7xl items-center justify-between gap-2 rounded-2xl border px-4 py-3 transition-all duration-500 sm:gap-4 sm:px-5",
           scrolled
             ? "border-white/75 bg-white/80 shadow-[0_18px_50px_-24px_rgba(5,46,36,0.32)] backdrop-blur-2xl"
             : "border-white/55 bg-white/55 shadow-[0_12px_40px_-30px_rgba(5,46,36,0.25)] backdrop-blur-xl",
         )}
       >
-        <Logo />
+        <Logo wordmarkClassName="hidden sm:inline" />
 
         <div className="hidden items-center gap-1 lg:flex">
           {navLinks.map((link) => (
@@ -54,15 +57,24 @@ function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 lg:flex">
-          <Button to="/login" variant="ghost" size="sm" className="gap-1.5">
-            <LogIn className="h-3.5 w-3.5" />
-            Login
-          </Button>
-          <Button to="/register" size="sm" className="gap-1.5">
-            Get Started
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </Button>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {user ? (
+            <Button to={PATHS.DASHBOARD} size="sm" className="gap-1.5">
+              My Profile
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Button>
+          ) : (
+            <>
+              <Button to={PATHS.LOGIN} variant="ghost" size="sm" className="gap-1.5">
+                <LogIn className="hidden h-3.5 w-3.5 sm:block" />
+                Login
+              </Button>
+              <Button to={PATHS.REGISTER} size="sm" className="gap-1.5">
+                Register
+                <ArrowUpRight className="hidden h-3.5 w-3.5 sm:block" />
+              </Button>
+            </>
+          )}
         </div>
 
         <button
@@ -99,12 +111,20 @@ function Navbar() {
                 ))}
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 border-t border-forest-900/10 pt-3">
-                <Button to="/login" variant="outline" size="sm" onClick={closeMobile}>
-                  Login
-                </Button>
-                <Button to="/register" size="sm" onClick={closeMobile}>
-                  Get Started
-                </Button>
+                {user ? (
+                  <Button to={PATHS.DASHBOARD} size="sm" onClick={closeMobile} className="col-span-2">
+                    My Profile
+                  </Button>
+                ) : (
+                  <>
+                    <Button to={PATHS.LOGIN} variant="outline" size="sm" onClick={closeMobile}>
+                      Login
+                    </Button>
+                    <Button to={PATHS.REGISTER} size="sm" onClick={closeMobile}>
+                      Register
+                    </Button>
+                  </>
+                )}
               </div>
               <p className="mt-3 px-2 text-[11px] leading-relaxed text-slate-500">
                 Demo landing experience. Statistics shown are illustrative.

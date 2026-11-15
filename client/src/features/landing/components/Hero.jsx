@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { cn } from "../../../utils/cn";
+import { useAuth } from "../../auth/hooks/useAuth";
+import { PATHS } from "../../../utils/paths";
 import { heroStats, trustPoints } from "../data/landingData";
 import HotspotMap from "./HotspotMap";
 
@@ -115,6 +117,7 @@ function HeroVisual() {
 
 function Hero() {
   const reduceMotion = useReducedMotion();
+  const { user } = useAuth();
   const fadeUp = {
     hidden: { opacity: 0, y: reduceMotion ? 0 : 24 },
     show: { opacity: 1, y: 0 },
@@ -167,10 +170,20 @@ function Hero() {
               transition={{ duration: reduceMotion ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
               className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
             >
-              <Button to="/register" size="lg" className="group w-full sm:w-auto">
+              <Button
+                to={user ? PATHS.CREATE_POST : PATHS.REGISTER}
+                size="lg"
+                className="group w-full sm:w-auto"
+              >
                 Report an Issue
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
               </Button>
+              {user && (
+                <Button to={PATHS.DASHBOARD} variant="lime" size="lg" className="group w-full sm:w-auto">
+                  My Profile
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                </Button>
+              )}
               <Button href="#features" variant="outline" size="lg" className="group w-full sm:w-auto">
                 Explore the Platform
                 <ArrowDown className="h-4 w-4 transition-transform duration-300 group-hover:translate-y-0.5" />

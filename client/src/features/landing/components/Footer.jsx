@@ -2,8 +2,21 @@ import { Link } from "react-router-dom";
 import { ArrowUpRight, Leaf, ShieldCheck } from "lucide-react";
 import Logo from "../../../components/common/Logo";
 import { footerColumns } from "../data/landingData";
+import { useAuth } from "../../auth/hooks/useAuth";
+import { PATHS } from "../../../utils/paths";
 
 function Footer() {
+  const { user } = useAuth();
+
+  const columns = footerColumns.map((column) => {
+    if (column.title !== "Account" || !user) return column;
+
+    return {
+      title: column.title,
+      links: [{ label: "My Profile", to: PATHS.DASHBOARD }],
+    };
+  });
+
   return (
     <footer className="relative overflow-hidden bg-forest-950 text-white">
       <div className="grid-pattern-dark pointer-events-none absolute inset-0 opacity-70" />
@@ -30,7 +43,7 @@ function Footer() {
             </div>
           </div>
 
-          {footerColumns.map((column) => (
+          {columns.map((column) => (
             <div key={column.title}>
               <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-lime-200/80">
                 {column.title}

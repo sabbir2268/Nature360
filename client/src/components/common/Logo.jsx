@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Leaf } from "lucide-react";
 import { cn } from "../../utils/cn";
 
-function Logo({ to = "/", tone = "light", className = "", showWordmark = true }) {
+function Logo({ to = "/", tone = "light", className = "", showWordmark = true, wordmarkClassName = "" }) {
   const isDark = tone === "dark";
 
   return (
@@ -20,6 +20,7 @@ function Logo({ to = "/", tone = "light", className = "", showWordmark = true })
           className={cn(
             "font-display text-xl font-extrabold tracking-[-0.03em]",
             isDark ? "text-white" : "text-forest-950",
+            wordmarkClassName,
           )}
         >
           Eco<span className={isDark ? "text-lime-300" : "text-emerald-600"}>Track</span>

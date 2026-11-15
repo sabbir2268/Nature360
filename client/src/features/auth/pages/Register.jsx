@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-react";
 import Button from "../../../components/ui/Button";
+import GoogleIcon from "../../../components/ui/GoogleIcon";
 import TextField from "../../../components/ui/TextField";
 import { PATHS } from "../../../utils/paths";
+import { getAuthErrorMessage, loginWithGoogle, registerUser } from "../services/authServices";
 
 function Register() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -14,19 +17,62 @@ function Register() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleChange = (event) => {
     setFormData({ ...formData, [event.target.name]: event.target.value });
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setError("");
+
     if (formData.password !== formData.confirmPassword) {
-      setNotice("Passwords do not match. Please check both password fields.");
+      setError("Passwords do not match. Please check both password fields.");
       return;
     }
-    setNotice("Demo only — registration is not connected yet.");
+
+    setSubmitting(true);
+
+    try {
+      await registerUser({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      navigate(PATHS.LOGIN, {
+        replace: true,
+        state: {
+          message: "Account created successfully. Please sign in with your new credentials.",
+        },
+      });
+    } catch (authError) {
+      setError(getAuthErrorMessage(authError));
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setError("");
+
+    if (!agreed) {
+      setError("Please tick the acknowledgement checkbox before continuing with Google.");
+      return;
+    }
+
+    setGoogleLoading(true);
+
+    try {
+      await loginWithGoogle();
+      // PublicRoute sends authenticated users to their profile.
+    } catch (googleError) {
+      const message = getAuthErrorMessage(googleError);
+      if (message) setError(message);
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -42,7 +88,27 @@ function Register() {
         community.
       </p>
 
-      <form className="mt-7 space-y-3.5" onSubmit={handleSubmit}>
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        onClick={handleGoogle}
+        disabled={googleLoading || submitting}
+        className="mt-6 w-full gap-2.5"
+      >
+        <GoogleIcon className="h-4 w-4" />
+        {googleLoading ? "Connecting to Google…" : "Continue with Google"}
+      </Button>
+
+      <div className="my-5 flex items-center gap-3">
+        <span className="h-px flex-1 bg-forest-900/10" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+          or use email
+        </span>
+        <span className="h-px flex-1 bg-forest-900/10" />
+      </div>
+
+      <form className="space-y-3.5" onSubmit={handleSubmit}>
         <TextField
           id="register-name"
           label="Full name"
@@ -53,6 +119,8 @@ function Register() {
           autoComplete="name"
           value={formData.name}
           onChange={handleChange}
+          minLength={2}
+          maxLength={80}
           required
         />
 
@@ -115,25 +183,25 @@ function Register() {
             required
             className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-forest-900/20 accent-emerald-600"
           />
-          I understand that this is a demo registration experience and that environmental officers
-          make final decisions on complaints.
+          I understand that environmental officers make the final decisions on complaints, and that
+          false reports may be removed.
         </label>
 
-        <Button type="submit" size="lg" className="group w-full">
-          Create account
+        <Button type="submit" size="lg" className="group w-full" disabled={submitting}>
+          {submitting ? "Creating account…" : "Create account"}
           <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
         </Button>
-
-        {notice && (
-          <p
-            role="status"
-            aria-live="polite"
-            className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] font-medium text-amber-800"
-          >
-            {notice}
-          </p>
-        )}
       </form>
+
+      {error && (
+        <p
+          role="alert"
+          className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-[11px] font-medium text-rose-700"
+        >
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {error}
+        </p>
+      )}
 
       <p className="mt-6 text-center text-[12px] text-slate-500">
         Already have an account?{" "}
@@ -145,7 +213,8 @@ function Register() {
       <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-forest-900/[0.07] bg-white/50 p-3">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
         <p className="text-[10px] leading-5 text-slate-500">
-          This is a demo form. No credentials are sent or stored.
+          Accounts are secured by Firebase Authentication. After registering you will be asked to
+          sign in.
         </p>
       </div>
     </div>

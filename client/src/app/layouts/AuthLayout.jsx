@@ -91,7 +91,7 @@ function AuthLayout() {
                 <ArrowLeft className="h-3 w-3" />
                 Back to home
               </Link>
-              <p>Demo experience · Authentication is not connected</p>
+              <p>Secured by Firebase Authentication</p>
             </div>
           </div>
         </div>
