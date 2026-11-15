@@ -11,7 +11,16 @@ export async function connectDB() {
 
   await mongoose.connect(uri, {
     dbName: process.env.MONGODB_DB || undefined,
+    serverSelectionTimeoutMS: 10000,
   });
 
   console.log(`MongoDB connected (database: ${mongoose.connection.name})`);
+
+  mongoose.connection.on("disconnected", () => {
+    console.warn("MongoDB disconnected.");
+  });
+
+  mongoose.connection.on("reconnected", () => {
+    console.log("MongoDB reconnected.");
+  });
 }

@@ -1,4 +1,5 @@
-import "dotenv/config";
+import "./config/env.js";
+
 import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
@@ -42,6 +43,49 @@ app.use((error, req, res, next) => {
   return res.status(500).json({ error: "Something went wrong on the server.", code: "server_error" });
 });
 
+let server;
+let shuttingDown = false;
+
+function listen() {
+  return new Promise((resolve, reject) => {
+    const instance = app.listen(PORT);
+    const onError = (error) => {
+      instance.off("listening", onListening);
+      reject(error);
+    };
+    const onListening = () => {
+      instance.off("error", onError);
+      resolve(instance);
+    };
+
+    instance.once("error", onError);
+    instance.once("listening", onListening);
+  });
+}
+
+async function shutdown(exitCode = 0) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  console.log("Shutting down Nature360 API…");
+
+  // Do not let a stuck connection keep the process alive forever.
+  const forceExit = setTimeout(() => process.exit(exitCode || 1), 5000);
+  forceExit.unref();
+
+  if (server) {
+    await new Promise((resolve) => server.close(resolve));
+  }
+
+  try {
+    await mongoose.disconnect();
+  } catch (error) {
+    console.error("MongoDB disconnect failed:", error);
+  }
+
+  process.exit(exitCode);
+}
+
 async function start() {
   try {
     await connectDB();
@@ -52,13 +96,29 @@ async function start() {
       );
     }
 
-    app.listen(PORT, () => {
-      console.log(`Nature360 API listening on http://localhost:${PORT}`);
-      console.log(`Allowed origins: ${CORS_ORIGIN.join(", ")}`);
+    server = await listen();
+
+    server.on("error", (error) => {
+      console.error("HTTP server error:", error);
+      shutdown(1);
     });
+
+    console.log(`Nature360 API listening on http://localhost:${PORT}`);
+    console.log(`Allowed origins: ${CORS_ORIGIN.join(", ")}`);
+
+    process.once("SIGINT", () => shutdown(0));
+    process.once("SIGTERM", () => shutdown(0));
   } catch (error) {
-    console.error("Failed to start Nature360 API:", error);
-    process.exit(1);
+    if (error.code === "EADDRINUSE") {
+      console.error(
+        `Port ${PORT} is already in use. Another Nature360 API or dev server is probably running.\n` +
+          `Stop the other process or change PORT in server/.env, then try again.`,
+      );
+    } else {
+      console.error("Failed to start Nature360 API:", error);
+    }
+
+    await shutdown(1);
   }
 }
 

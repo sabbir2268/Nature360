@@ -1,14 +1,19 @@
 import User from "../models/User.js";
 
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
+function getFirebaseApiKey() {
+  return (process.env.FIREBASE_API_KEY || "").trim();
+}
 
 async function verifyFirebaseToken(idToken) {
+  const apiKey = getFirebaseApiKey();
+
   const response = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(FIREBASE_API_KEY)}`,
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ idToken }),
+      signal: AbortSignal.timeout(10000),
     },
   );
 
@@ -31,7 +36,7 @@ async function verifyFirebaseToken(idToken) {
  */
 export async function requireAuth(req, res, next) {
   try {
-    if (!FIREBASE_API_KEY) {
+    if (!getFirebaseApiKey()) {
       return res.status(500).json({
         error: "Server auth is not configured. Add FIREBASE_API_KEY to server/.env.",
         code: "auth_not_configured",
@@ -66,6 +71,14 @@ export async function requireAuth(req, res, next) {
     return next();
   } catch (error) {
     console.error("Auth verification failed:", error);
+
+    if (error.name === "TimeoutError" || error.name === "AbortError") {
+      return res.status(503).json({
+        error: "The authentication service is taking too long to respond. Please try again.",
+        code: "auth_unavailable",
+      });
+    }
+
     return res.status(401).json({
       error: "Your session could not be verified. Please sign in again.",
       code: "unauthorized",
