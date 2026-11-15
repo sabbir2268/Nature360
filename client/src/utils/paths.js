@@ -7,3 +7,8 @@ export const PATHS = {
   CREATE_POST: "/dashboard/create-post",
   TRACK_POST: "/dashboard/track-post",
 };
+
+/** Public URL of a single complaint's tracking page. */
+export function postDetailsPath(postId) {
+  return `${PATHS.TRACK_POST}/${postId}`;
+}

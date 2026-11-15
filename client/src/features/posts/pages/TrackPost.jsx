@@ -1,34 +1,58 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
+  ArrowRight,
   CheckCircle2,
   CircleCheck,
   CircleDot,
   Clock3,
   FileSearch,
   PlusCircle,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import Reveal from "../../../components/ui/Reveal";
 import Button from "../../../components/ui/Button";
 import StatusBadge from "../components/StatusBadge";
-import StatusTimeline from "../components/StatusTimeline";
-import { useAuth } from "../../auth/hooks/useAuth";
 import { POST_STATUSES, getUserPosts } from "../services/postServices";
-import { formatDate } from "../../../utils/format";
-import { PATHS } from "../../../utils/paths";
+import { getApiErrorMessage } from "../../../lib/api";
+import { formatDateTime } from "../../../utils/format";
+import { PATHS, postDetailsPath } from "../../../utils/paths";
 import { cn } from "../../../utils/cn";
 
 const filterIcons = {
   All: CircleDot,
-  Reported: CircleDot,
+  Submitted: CircleDot,
   "Under Review": FileSearch,
-  "In Progress": Clock3,
+  Verified: ShieldCheck,
+  Investigation: FileSearch,
+  "Action Taken": Clock3,
   Resolved: CircleCheck,
 };
 
+function StatusProgress({ status }) {
+  const currentIndex = Math.max(POST_STATUSES.indexOf(status), 0);
+
+  return (
+    <div className="flex items-center gap-1" aria-hidden="true">
+      {POST_STATUSES.map((step, index) => (
+        <span
+          key={step}
+          className={cn(
+            "h-1.5 flex-1 rounded-full transition-colors",
+            index <= currentIndex
+              ? index === currentIndex
+                ? "bg-emerald-500"
+                : "bg-emerald-300"
+              : "bg-forest-900/10",
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
 function TrackPost() {
-  const { user } = useAuth();
   const location = useLocation();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,20 +60,19 @@ function TrackPost() {
   const [filter, setFilter] = useState("All");
   const [flash, setFlash] = useState(location.state?.message || "");
 
-  const uid = user?.uid;
-
   useEffect(() => {
     let active = true;
 
-    if (!uid) return undefined;
-
-    getUserPosts(uid)
+    getUserPosts()
       .then((result) => {
-        if (active) setPosts(result);
+        if (active) {
+          setPosts(result);
+          setError("");
+        }
       })
       .catch((fetchError) => {
         console.error("Unable to load posts:", fetchError);
-        if (active) setError("We couldn't load your posts right now. Please refresh and try again.");
+        if (active) setError(getApiErrorMessage(fetchError));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -58,7 +81,7 @@ function TrackPost() {
     return () => {
       active = false;
     };
-  }, [uid]);
+  }, []);
 
   const counts = useMemo(() => {
     const result = { All: posts.length };
@@ -129,7 +152,10 @@ function TrackPost() {
       {loading ? (
         <div className="grid gap-4 lg:grid-cols-2">
           {[0, 1].map((key) => (
-            <div key={key} className="h-64 animate-pulse rounded-[1.75rem] border border-white/70 bg-white/50" />
+            <div
+              key={key}
+              className="h-48 animate-pulse rounded-[1.75rem] border border-white/70 bg-white/50"
+            />
           ))}
         </div>
       ) : error ? (
@@ -149,33 +175,36 @@ function TrackPost() {
               Nothing to track yet
             </h2>
             <p className="mx-auto mt-1.5 max-w-sm text-[12px] leading-6 text-slate-500">
-              Create your first post and this page will follow it from submission through to
+              Create your first complaint and this page will follow it from submission through to
               resolution.
             </p>
             <Button to={PATHS.CREATE_POST} size="sm" className="mt-5 gap-1.5">
               <PlusCircle className="h-4 w-4" />
-              Create post
+              Create complaint
             </Button>
           </div>
         </Reveal>
       ) : visiblePosts.length === 0 ? (
         <div className="glass rounded-[1.75rem] px-6 py-12 text-center">
           <p className="font-display text-sm font-bold text-forest-950">
-            No posts with status “{filter}”
+            No complaints with status “{filter}”
           </p>
           <button
             type="button"
             onClick={() => setFilter("All")}
             className="mt-2 text-[11px] font-bold text-emerald-700 hover:text-forest-900 hover:underline"
           >
-            Show all posts
+            Show all complaints
           </button>
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {visiblePosts.map((post, index) => (
             <Reveal key={post.id} delay={Math.min(index * 0.05, 0.2)}>
-              <article className="glass h-full rounded-[1.75rem] p-5 sm:p-6">
+              <Link
+                to={postDetailsPath(post.id)}
+                className="glass group flex h-full flex-col rounded-[1.75rem] p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300/60 hover:shadow-lift sm:p-6"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="font-display text-base font-extrabold leading-snug tracking-[-0.025em] text-forest-950 sm:text-[17px]">
@@ -186,30 +215,32 @@ function TrackPost() {
                       <span className="h-1 w-1 rounded-full bg-slate-300" />
                       <span>{post.location || "No location"}</span>
                       <span className="h-1 w-1 rounded-full bg-slate-300" />
-                      <span>{formatDate(post.createdAt, "Just now")}</span>
+                      <span>{formatDateTime(post.createdAt)}</span>
                     </p>
                   </div>
                   <StatusBadge status={post.status} />
                 </div>
 
                 {post.description && (
-                  <p className="mt-3 line-clamp-3 text-[12px] leading-6 text-slate-600">
+                  <p className="mt-3 line-clamp-2 text-[12px] leading-6 text-slate-600">
                     {post.description}
                   </p>
                 )}
 
-                <div className="mt-4 rounded-2xl border border-forest-900/[0.07] bg-white/50 p-3.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                      Progress
-                    </p>
-                    <span className="rounded-full border border-forest-900/10 bg-white/70 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                      Ref {post.id?.slice(0, 6).toUpperCase()}
+                <div className="mt-auto pt-4">
+                  <StatusProgress status={post.status} />
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-forest-900/[0.07] pt-3">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400">
+                      <Clock3 className="h-3 w-3" />
+                      Updated {formatDateTime(post.updatedAt, "just now")}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 transition-colors group-hover:text-forest-900">
+                      Track
+                      <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5" />
                     </span>
                   </div>
-                  <StatusTimeline status={post.status} />
                 </div>
-              </article>
+              </Link>
             </Reveal>
           ))}
         </div>

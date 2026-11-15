@@ -3,13 +3,15 @@ import { POST_STATUSES } from "../services/postServices";
 import { cn } from "../../../utils/cn";
 
 const descriptions = {
-  Reported: "Submitted with photos and location details.",
-  "Under Review": "An officer is validating the report.",
-  "In Progress": "Action has started at the site.",
-  Resolved: "The issue has been resolved and closed.",
+  Submitted: "Complaint received with your details and evidence.",
+  "Under Review": "An officer is checking the report details.",
+  Verified: "The issue was verified at the reported location.",
+  Investigation: "The responsible team is investigating the cause.",
+  "Action Taken": "Corrective action is being carried out.",
+  Resolved: "The issue has been fixed and the complaint closed.",
 };
 
-function StatusTimeline({ status = "Reported" }) {
+function StatusTimeline({ status = "Submitted" }) {
   const currentIndex = Math.max(POST_STATUSES.indexOf(status), 0);
 
   return (

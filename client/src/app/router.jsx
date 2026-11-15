@@ -11,6 +11,7 @@ import Register from "../features/auth/pages/Register";
 import Overview from "../features/profile/pages/Overview";
 import CreatePost from "../features/posts/pages/CreatePost";
 import TrackPost from "../features/posts/pages/TrackPost";
+import PostDetails from "../features/posts/pages/PostDetails";
 import { PATHS } from "../utils/paths";
 
 export const router = createBrowserRouter([
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Overview /> },
           { path: "create-post", element: <CreatePost /> },
           { path: "track-post", element: <TrackPost /> },
+          { path: "track-post/:postId", element: <PostDetails /> },
         ],
       },
     ],

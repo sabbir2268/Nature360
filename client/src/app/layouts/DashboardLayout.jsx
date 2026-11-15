@@ -164,12 +164,21 @@ function DashboardLayout() {
   const email = profile?.email || user?.email || "";
   const role = profile?.role || "Citizen";
 
+  const isComplaintDetails = location.pathname.startsWith(`${PATHS.TRACK_POST}/`);
+
   const meta =
-    pageMeta[location.pathname] ?? {
-      eyebrow: "Dashboard",
-      title: "Overview",
-      subtitle: "Manage your reports and profile.",
-    };
+    pageMeta[location.pathname] ??
+    (isComplaintDetails
+      ? {
+          eyebrow: "Complaint tracking",
+          title: "Complaint details",
+          subtitle: "Live status history, evidence and resolution actions for this complaint.",
+        }
+      : {
+          eyebrow: "Dashboard",
+          title: "Overview",
+          subtitle: "Manage your reports and profile.",
+        });
 
   useEffect(() => {
     if (!mobileOpen) return undefined;
@@ -199,7 +208,7 @@ function DashboardLayout() {
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-[100rem] lg:gap-6 lg:px-6 lg:py-6">
         {/* Desktop sidebar */}
-        <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-72 shrink-0 flex-col rounded-[2rem] border border-white/75 bg-white/70 p-5 shadow-[0_30px_90px_-45px_rgba(5,46,36,0.45)] backdrop-blur-xl lg:flex">
+        <aside className="thin-scrollbar sticky top-6 hidden h-[calc(100vh-3rem)] w-72 shrink-0 flex-col overflow-y-auto overscroll-contain rounded-[2rem] border border-white/75 bg-white/70 p-5 shadow-[0_30px_90px_-45px_rgba(5,46,36,0.45)] backdrop-blur-xl lg:flex">
           <Logo />
 
           <p className="mt-7 px-2 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
@@ -299,7 +308,7 @@ function DashboardLayout() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
-              className="relative flex h-full w-[84%] max-w-xs flex-col border-r border-white/70 bg-mist/95 p-5 shadow-[0_30px_90px_-30px_rgba(5,46,36,0.6)] backdrop-blur-xl"
+              className="thin-scrollbar relative flex h-full w-[84%] max-w-xs flex-col overflow-y-auto overscroll-contain border-r border-white/70 bg-mist/95 p-5 pb-8 shadow-[0_30px_90px_-30px_rgba(5,46,36,0.6)] backdrop-blur-xl"
             >
               <div className="flex items-center justify-between">
                 <Logo />

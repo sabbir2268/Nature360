@@ -18,8 +18,9 @@ import Button from "../../../components/ui/Button";
 import StatusBadge from "../../posts/components/StatusBadge";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { getUserPosts } from "../../posts/services/postServices";
+import { getApiErrorMessage } from "../../../lib/api";
 import { formatDate, initialsFromName } from "../../../utils/format";
-import { PATHS } from "../../../utils/paths";
+import { PATHS, postDetailsPath } from "../../../utils/paths";
 import { cn } from "../../../utils/cn";
 
 function StatCard({ icon: Icon, label, value, accent, delay = 0 }) {
@@ -73,13 +74,13 @@ function Overview() {
 
     if (!uid) return undefined;
 
-    getUserPosts(uid)
+    getUserPosts()
       .then((result) => {
         if (active) setPosts(result);
       })
       .catch((fetchError) => {
         console.error("Unable to load posts:", fetchError);
-        if (active) setError("We couldn't load your posts right now. Please refresh and try again.");
+        if (active) setError(getApiErrorMessage(fetchError));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -255,26 +256,28 @@ function Overview() {
             ) : (
               <ul className="mt-4 space-y-2.5">
                 {recentPosts.map((post) => (
-                  <li
-                    key={post.id}
-                    className="group rounded-2xl border border-forest-900/[0.07] bg-white/60 p-3.5 transition-colors duration-300 hover:border-emerald-500/30 hover:bg-white/85"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-[12px] font-bold text-forest-950">{post.title}</p>
-                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-slate-500">
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-emerald-600" />
-                            {post.location || "No location"}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <CalendarDays className="h-3 w-3 text-emerald-600" />
-                            {formatDate(post.createdAt, "Just now")}
-                          </span>
-                        </p>
+                  <li key={post.id}>
+                    <Link
+                      to={postDetailsPath(post.id)}
+                      className="group block rounded-2xl border border-forest-900/[0.07] bg-white/60 p-3.5 transition-colors duration-300 hover:border-emerald-500/30 hover:bg-white/85"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-[12px] font-bold text-forest-950">{post.title}</p>
+                          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-slate-500">
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="h-3 w-3 text-emerald-600" />
+                              {post.location || "No location"}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <CalendarDays className="h-3 w-3 text-emerald-600" />
+                              {formatDate(post.createdAt, "Just now")}
+                            </span>
+                          </p>
+                        </div>
+                        <StatusBadge status={post.status} />
                       </div>
-                      <StatusBadge status={post.status} />
-                    </div>
+                    </Link>
                   </li>
                 ))}
               </ul>

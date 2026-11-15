@@ -5,13 +5,13 @@ import Button from "../../../components/ui/Button";
 import TextField from "../../../components/ui/TextField";
 import SelectField from "../../../components/ui/SelectField";
 import Reveal from "../../../components/ui/Reveal";
-import { useAuth } from "../../auth/hooks/useAuth";
 import {
   POST_CATEGORIES,
   POST_SEVERITIES,
   createPost,
 } from "../../posts/services/postServices";
-import { PATHS } from "../../../utils/paths";
+import { getApiErrorMessage } from "../../../lib/api";
+import { PATHS, postDetailsPath } from "../../../utils/paths";
 
 const emptyForm = {
   title: "",
@@ -28,7 +28,6 @@ const tips = [
 ];
 
 function CreatePost() {
-  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -40,19 +39,12 @@ function CreatePost() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!user) {
-      setError("Your session expired. Please sign in again.");
-      return;
-    }
 
     setSubmitting(true);
     setError("");
 
     try {
-      await createPost({
-        userId: user.uid,
-        authorName: profile?.name || user.displayName || "EcoTrack member",
-        authorEmail: profile?.email || user.email || "",
+      const created = await createPost({
         title: form.title.trim(),
         category: form.category,
         severity: form.severity,
@@ -61,17 +53,13 @@ function CreatePost() {
       });
 
       setForm(emptyForm);
-      navigate(PATHS.TRACK_POST, {
+      navigate(postDetailsPath(created.id), {
         replace: true,
-        state: { message: "Post created successfully. You can track its progress below." },
+        state: { message: "Complaint submitted. Follow its progress on this page." },
       });
     } catch (submitError) {
       console.error("Unable to create post:", submitError);
-      setError(
-        submitError?.code === "permission-denied"
-          ? "Your post could not be saved. Check your Firestore rules and try again."
-          : "Something went wrong while saving your post. Please try again.",
-      );
+      setError(getApiErrorMessage(submitError));
       setSubmitting(false);
     }
   };
