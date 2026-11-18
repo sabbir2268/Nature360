@@ -3,7 +3,7 @@ import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
 
-import { connectDB } from "./config/db.js";
+import { connectDB, disconnectDB } from "./config/db.js";
 import postRoutes from "./routes/posts.js";
 import userRoutes from "./routes/users.js";
 
@@ -17,7 +17,7 @@ const app = express();
 
 app.disable("x-powered-by");
 app.use(cors({ origin: CORS_ORIGIN.includes("*") ? true : CORS_ORIGIN }));
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "8mb" }));
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -52,10 +52,24 @@ async function start() {
       );
     }
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Nature360 API listening on http://localhost:${PORT}`);
       console.log(`Allowed origins: ${CORS_ORIGIN.join(", ")}`);
     });
+
+    const shutdown = async (signal) => {
+      console.log(`Received ${signal}, shutting down...`);
+      server.close(async () => {
+        try {
+          await disconnectDB();
+        } finally {
+          process.exit(0);
+        }
+      });
+    };
+
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
   } catch (error) {
     console.error("Failed to start Nature360 API:", error);
     process.exit(1);

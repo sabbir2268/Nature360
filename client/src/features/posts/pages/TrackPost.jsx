@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowRight,
   CheckCircle2,
   CircleCheck,
@@ -8,6 +9,7 @@ import {
   Clock3,
   FileSearch,
   PlusCircle,
+  RefreshCw,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -59,6 +61,7 @@ function TrackPost() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("All");
   const [flash, setFlash] = useState(location.state?.message || "");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -81,7 +84,7 @@ function TrackPost() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const counts = useMemo(() => {
     const result = { All: posts.length };
@@ -159,12 +162,24 @@ function TrackPost() {
           ))}
         </div>
       ) : error ? (
-        <p
+        <div
           role="alert"
-          className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[11px] font-medium text-rose-700"
+          className="flex flex-wrap items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[11px] font-medium text-rose-700"
         >
-          {error}
-        </p>
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <p className="min-w-0 flex-1">{error}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              setReloadKey((key) => key + 1);
+            }}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-rose-300 bg-white px-3 py-1.5 text-[10px] font-bold text-rose-700 transition-colors hover:bg-rose-100"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Try again
+          </button>
+        </div>
       ) : posts.length === 0 ? (
         <Reveal>
           <div className="glass rounded-[1.75rem] px-6 py-14 text-center">

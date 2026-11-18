@@ -18,6 +18,7 @@ import Button from "../../../components/ui/Button";
 import Reveal from "../../../components/ui/Reveal";
 import StatusBadge from "../components/StatusBadge";
 import StatusTimeline from "../components/StatusTimeline";
+import ResolutionFeedback from "../components/ResolutionFeedback";
 import { getApiErrorMessage } from "../../../lib/api";
 import { getPost } from "../services/postServices";
 import { formatDateTime } from "../../../utils/format";
@@ -94,6 +95,11 @@ function PostDetails() {
     setLoading(true);
     setError("");
     loadPost();
+  };
+
+  const handlePostUpdated = (updatedPost) => {
+    setPost(updatedPost);
+    setError("");
   };
 
   if (loading) {
@@ -300,6 +306,11 @@ function PostDetails() {
               )}
             </div>
           </Reveal>
+
+          {/* Resolution feedback (FR-04) */}
+          <Reveal delay={0.05}>
+            <ResolutionFeedback post={post} onUpdated={handlePostUpdated} />
+          </Reveal>
         </div>
 
         <div className="space-y-5">
@@ -320,6 +331,11 @@ function PostDetails() {
                 <InfoRow icon={User} label="Reported by" value={post.authorName || "Citizen"} />
                 <InfoRow icon={CalendarDays} label="Submitted" value={formatDateTime(post.createdAt)} />
                 <InfoRow icon={Clock3} label="Last update" value={formatDateTime(post.updatedAt)} />
+                <InfoRow
+                  icon={CheckCircle2}
+                  label="Resolution"
+                  value={post.resolutionStatus || "Awaiting Citizen"}
+                />
               </div>
 
               <div className="mt-4 rounded-2xl border border-forest-900/[0.07] bg-white/50 p-4">
