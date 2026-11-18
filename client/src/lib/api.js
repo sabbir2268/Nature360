@@ -66,6 +66,31 @@ export async function apiRequest(path, { method = "GET", body, signal, headers: 
   return handleResponse(response);
 }
 
+/** Authenticated binary download (used for the admin PDF report). */
+export async function apiDownload(path, filename) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: await authHeaders(),
+  });
+
+  if (!response.ok) {
+    const data = await readBody(response);
+    throw new ApiError(data?.error || "The download could not be prepared.", {
+      status: response.status,
+      code: data?.code || "",
+    });
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function getApiErrorMessage(error) {
   if (error instanceof ApiError) return error.message;
 
@@ -74,4 +99,15 @@ export function getApiErrorMessage(error) {
   }
 
   return error?.message || "Something went wrong. Please try again.";
+}
+
+export function buildQuery(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "" && value !== "All") {
+      query.set(key, String(value));
+    }
+  });
+  const text = query.toString();
+  return text ? `?${text}` : "";
 }

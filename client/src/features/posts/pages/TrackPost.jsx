@@ -16,7 +16,7 @@ import {
 import Reveal from "../../../components/ui/Reveal";
 import Button from "../../../components/ui/Button";
 import StatusBadge from "../components/StatusBadge";
-import { POST_STATUSES, getUserPosts } from "../services/postServices";
+import { POST_STATUSES, WORKFLOW_STATUSES, getUserPosts } from "../services/postServices";
 import { getApiErrorMessage } from "../../../lib/api";
 import { formatDateTime } from "../../../utils/format";
 import { PATHS, postDetailsPath } from "../../../utils/paths";
@@ -30,14 +30,23 @@ const filterIcons = {
   Investigation: FileSearch,
   "Action Taken": Clock3,
   Resolved: CircleCheck,
+  Rejected: AlertCircle,
 };
 
 function StatusProgress({ status }) {
-  const currentIndex = Math.max(POST_STATUSES.indexOf(status), 0);
+  if (status === "Rejected") {
+    return (
+      <div className="flex items-center gap-1" aria-hidden="true">
+        <span className="h-1.5 flex-1 rounded-full bg-rose-400" />
+      </div>
+    );
+  }
+
+  const currentIndex = Math.max(WORKFLOW_STATUSES.indexOf(status), 0);
 
   return (
     <div className="flex items-center gap-1" aria-hidden="true">
-      {POST_STATUSES.map((step, index) => (
+      {WORKFLOW_STATUSES.map((step, index) => (
         <span
           key={step}
           className={cn(

@@ -5,6 +5,8 @@ import {
   browserSessionPersistence,
   createUserWithEmailAndPassword,
   getAuth,
+  reload,
+  sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
@@ -12,19 +14,15 @@ import {
   signOut,
   updateProfile,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { app, auth, db } from "../../../config/firebase";
+import { app, auth } from "../../../config/firebase";
+import { apiRequest } from "../../../lib/api";
 
-const USERS_COLLECTION = "users";
-const REGISTRATION_APP_NAME = "ecotrack-registration";
+const REGISTRATION_APP_NAME = "nature360-registration";
 
 /**
  * Creates the Firebase Auth account on a temporary secondary app so the
- * primary session stays signed out. That guarantees the user always lands on
- * the login page after registering.
- *
- * The Firestore profile document is created on the first successful login
- * (see ensureUserProfile), where the request is properly authenticated.
+ * primary session stays signed out, then sends the verification email.
+ * The MongoDB user profile is created by the API on the first sign-in.
  */
 export async function registerUser({ name, email, password }) {
   const secondaryApp = initializeApp(app.options, REGISTRATION_APP_NAME);
@@ -38,12 +36,22 @@ export async function registerUser({ name, email, password }) {
     );
 
     await updateProfile(credential.user, { displayName: name.trim() });
+
+    let verificationSent = false;
+    try {
+      await sendEmailVerification(credential.user);
+      verificationSent = true;
+    } catch (verificationError) {
+      console.warn("Verification email could not be sent:", verificationError);
+    }
+
     await signOut(secondaryAuth);
 
     return {
       uid: credential.user.uid,
       name: name.trim(),
       email: credential.user.email,
+      verificationSent,
     };
   } finally {
     await deleteApp(secondaryApp);
@@ -56,10 +64,6 @@ export async function loginUser({ email, password, remember = true }) {
   return credential.user;
 }
 
-/**
- * Google sign-in. Works both as a first-time sign-up and as a returning login;
- * the Firestore profile document is created on the first authenticated load.
- */
 export async function loginWithGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
@@ -76,41 +80,30 @@ export async function logoutUser() {
   await signOut(auth);
 }
 
-function normalizeProfile(data) {
-  return {
-    ...data,
-    createdAt: data.createdAt?.toDate?.() ?? null,
-  };
-}
-
-export async function getUserProfile(uid) {
-  const snapshot = await getDoc(doc(db, USERS_COLLECTION, uid));
-  if (!snapshot.exists()) return null;
-  return normalizeProfile(snapshot.data());
-}
-
-/**
- * Creates the profile document the first time an account signs in.
- */
-export async function ensureUserProfile(user) {
-  const reference = doc(db, USERS_COLLECTION, user.uid);
-  const snapshot = await getDoc(reference);
-
-  if (snapshot.exists()) {
-    return normalizeProfile(snapshot.data());
+/** Re-send the Firebase verification email to the signed-in user. */
+export async function sendVerificationEmail() {
+  if (!auth.currentUser) {
+    throw new Error("Please sign in again.");
   }
+  await sendEmailVerification(auth.currentUser);
+}
 
-  const profile = {
-    uid: user.uid,
-    name: user.displayName?.trim() || user.email?.split("@")[0] || "EcoTrack member",
-    email: user.email || "",
-    role: "Citizen",
-    createdAt: serverTimestamp(),
-  };
+/** Reload the Firebase user so emailVerified reflects the latest state. */
+export async function reloadCurrentUser() {
+  if (!auth.currentUser) return null;
+  await reload(auth.currentUser);
+  return auth.currentUser;
+}
 
-  await setDoc(reference, profile);
+/** MongoDB is the source of truth for roles and account state. */
+export async function getMyProfile() {
+  const data = await apiRequest("/users/me");
+  return data.user;
+}
 
-  return { ...profile, createdAt: new Date() };
+export async function updateMyProfile(payload) {
+  const data = await apiRequest("/users/me", { method: "PATCH", body: payload });
+  return data.user;
 }
 
 const AUTH_ERROR_MESSAGES = {
@@ -133,7 +126,7 @@ const AUTH_ERROR_MESSAGES = {
   "auth/cancelled-popup-request": "",
   "auth/account-exists-with-different-credential":
     "An account already exists with this email using a different sign-in method.",
-  "permission-denied": "Your profile could not be saved. Check your Firestore rules and try again.",
+  "auth/requires-recent-login": "Please sign in again before making this change.",
 };
 
 export function getAuthErrorMessage(error) {

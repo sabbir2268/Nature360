@@ -1,10 +1,20 @@
-import "dotenv/config";
+import "./config/env.js";
+
 import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
 
 import { connectDB, disconnectDB } from "./config/db.js";
+import { ensureSettings } from "./services/settingsService.js";
+import alertRoutes from "./routes/alerts.js";
+import analyticsRoutes from "./routes/analytics.js";
+import auditRoutes from "./routes/audit.js";
+import dashboardRoutes from "./routes/dashboard.js";
+import intelligenceRoutes from "./routes/intelligence.js";
+import notificationRoutes from "./routes/notifications.js";
 import postRoutes from "./routes/posts.js";
+import reportRoutes from "./routes/reports.js";
+import settingsRoutes from "./routes/settings.js";
 import userRoutes from "./routes/users.js";
 
 const PORT = Number(process.env.PORT || 5000);
@@ -17,7 +27,7 @@ const app = express();
 
 app.disable("x-powered-by");
 app.use(cors({ origin: CORS_ORIGIN.includes("*") ? true : CORS_ORIGIN }));
-app.use(express.json({ limit: "8mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -30,6 +40,14 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api/alerts", alertRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/audit", auditRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/intelligence", intelligenceRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/settings", settingsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Endpoint not found.", code: "not_found" });
@@ -39,40 +57,93 @@ app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
 
   console.error("Unhandled API error:", error);
+
+  if (error.name === "ValidationError" || error.name === "CastError") {
+    return res.status(400).json({
+      error: "The request contained invalid data.",
+      code: "invalid_data",
+    });
+  }
+
   return res.status(500).json({ error: "Something went wrong on the server.", code: "server_error" });
 });
+
+let server;
+let shuttingDown = false;
+
+function listen() {
+  return new Promise((resolve, reject) => {
+    const instance = app.listen(PORT);
+    const onError = (error) => {
+      instance.off("listening", onListening);
+      reject(error);
+    };
+    const onListening = () => {
+      instance.off("error", onError);
+      resolve(instance);
+    };
+
+    instance.once("error", onError);
+    instance.once("listening", onListening);
+  });
+}
+
+async function shutdown(exitCode = 0) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  console.log("Shutting down Nature360 API...");
+
+  const forceExit = setTimeout(() => process.exit(exitCode || 1), 5000);
+  forceExit.unref();
+
+  if (server) {
+    await new Promise((resolve) => server.close(resolve));
+  }
+
+  try {
+    await disconnectDB();
+  } catch (error) {
+    console.error("MongoDB disconnect failed:", error);
+  }
+
+  process.exit(exitCode);
+}
 
 async function start() {
   try {
     await connectDB();
+    await ensureSettings();
 
     if (!process.env.FIREBASE_API_KEY) {
       console.warn(
-        "FIREBASE_API_KEY is not set — authenticated requests will fail until it is added to server/.env.",
+        "FIREBASE_API_KEY is not set - authenticated requests will fail until it is added to server/.env.",
       );
     }
 
-    const server = app.listen(PORT, () => {
-      console.log(`Nature360 API listening on http://localhost:${PORT}`);
-      console.log(`Allowed origins: ${CORS_ORIGIN.join(", ")}`);
+    server = await listen();
+
+    server.on("error", (error) => {
+      console.error("HTTP server error:", error);
+      shutdown(1);
     });
 
-    const shutdown = async (signal) => {
-      console.log(`Received ${signal}, shutting down...`);
-      server.close(async () => {
-        try {
-          await disconnectDB();
-        } finally {
-          process.exit(0);
-        }
-      });
-    };
+    console.log(`Nature360 API listening on http://localhost:${PORT}`);
+    console.log(`Allowed origins: ${CORS_ORIGIN.join(", ")}`);
 
-    process.on("SIGINT", () => shutdown("SIGINT"));
-    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.once("SIGINT", () => shutdown(0));
+    process.once("SIGTERM", () => shutdown(0));
   } catch (error) {
-    console.error("Failed to start Nature360 API:", error);
-    process.exit(1);
+    if (error.code === "EADDRINUSE") {
+      console.error(
+        `Port ${PORT} is already in use. Another Nature360 API or dev server is probably running.\n` +
+          `Stop the other process or change PORT in server/.env, then try again.`,
+      );
+    } else {
+      console.error("Failed to start Nature360 API:", error);
+    }
+
+    await shutdown(1);
   }
 }
 

@@ -1,26 +1,42 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  AlertTriangle,
+  ArrowRight,
+  BadgeCheck,
+  BarChart3,
   CalendarDays,
   CheckCircle2,
-  Clock,
+  ClipboardList,
+  Download,
+  FileSearch,
   FileText,
-  Mail,
-  MapPin,
+  MapPinned,
   PlusCircle,
-  Radar,
-  ShieldCheck,
-  Sparkles,
-  User,
+  RefreshCw,
+  ShieldAlert,
+  Timer,
+  Users,
 } from "lucide-react";
 import Reveal from "../../../components/ui/Reveal";
 import Button from "../../../components/ui/Button";
 import StatusBadge from "../../posts/components/StatusBadge";
+import { RiskBadge } from "../../../components/ui/Badge";
 import { useAuth } from "../../auth/hooks/useAuth";
-import { getUserPosts } from "../../posts/services/postServices";
+import { getDashboardOverview } from "../../dashboard/services/dashboardServices";
+import { downloadAdminReport } from "../../admin/services/adminServices";
+import {
+  reloadCurrentUser,
+  sendVerificationEmail,
+} from "../../auth/services/authServices";
 import { getApiErrorMessage } from "../../../lib/api";
-import { formatDate, initialsFromName } from "../../../utils/format";
-import { PATHS, postDetailsPath } from "../../../utils/paths";
+import { formatDateTime, initialsFromName } from "../../../utils/format";
+import {
+  PATHS,
+  assignedCasePath,
+  officerComplaintPath,
+  postDetailsPath,
+} from "../../../utils/paths";
 import { cn } from "../../../utils/cn";
 
 function StatCard({ icon: Icon, label, value, accent, delay = 0 }) {
@@ -43,44 +59,39 @@ function StatCard({ icon: Icon, label, value, accent, delay = 0 }) {
   );
 }
 
-function DetailRow({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-forest-900/[0.06] bg-white/60 px-3.5 py-3">
-      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-emerald-700">
-        <Icon className="h-3.5 w-3.5" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</p>
-        <p className="mt-0.5 break-words text-[12px] font-semibold text-forest-950">{value}</p>
-      </div>
-    </div>
-  );
+function complaintLink(role, postId) {
+  if (role === "Volunteer") return assignedCasePath(postId);
+  if (role === "Officer" || role === "Admin") return officerComplaintPath(postId);
+  return postDetailsPath(postId);
 }
 
 function Overview() {
-  const { profile, user } = useAuth();
-  const [posts, setPosts] = useState([]);
+  const { profile, user, refreshProfile } = useAuth();
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [verificationNotice, setVerificationNotice] = useState("");
+  const [verificationBusy, setVerificationBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  const uid = user?.uid;
-  const name = profile?.name || user?.displayName || "EcoTrack member";
-  const email = profile?.email || user?.email || "";
   const role = profile?.role || "Citizen";
-  const joined = profile?.createdAt;
+  const name = profile?.name || user?.displayName || "Nature360 member";
+  const email = profile?.email || user?.email || "";
+  const verified = Boolean(profile?.emailVerified || user?.emailVerified);
 
   useEffect(() => {
     let active = true;
 
-    if (!uid) return undefined;
-
-    getUserPosts()
+    getDashboardOverview()
       .then((result) => {
-        if (active) setPosts(result);
+        if (active) {
+          setData(result);
+          setError("");
+        }
       })
-      .catch((fetchError) => {
-        console.error("Unable to load posts:", fetchError);
-        if (active) setError(getApiErrorMessage(fetchError));
+      .catch((loadError) => {
+        if (active) setError(getApiErrorMessage(loadError));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -89,23 +100,144 @@ function Overview() {
     return () => {
       active = false;
     };
-  }, [uid]);
+  }, [reloadKey]);
 
-  const stats = useMemo(() => {
-    const resolved = posts.filter((post) => post.status === "Resolved").length;
-    const active = posts.filter((post) => post.status !== "Resolved").length;
+  const stats = data?.stats;
+
+  const statCards = useMemo(() => {
+    if (!stats) return [];
+
+    if (role === "Volunteer") {
+      return [
+        { label: "Assigned cases", value: stats.assignedToMe ?? 0, icon: FileSearch, accent: "bg-emerald-500/12 text-emerald-700" },
+        { label: "Reports submitted", value: stats.reportsSubmitted ?? 0, icon: FileText, accent: "bg-sky-500/12 text-sky-700" },
+        { label: "Overdue cases", value: stats.overdue ?? 0, icon: Timer, accent: "bg-rose-500/12 text-rose-700" },
+        { label: "Active alerts", value: stats.activeAlerts ?? 0, icon: AlertTriangle, accent: "bg-amber-500/12 text-amber-700" },
+      ];
+    }
+
+    if (role === "Officer" || role === "Admin") {
+      return [
+        { label: "Total complaints", value: stats.totalComplaints ?? 0, icon: ClipboardList, accent: "bg-forest-900/10 text-forest-900" },
+        { label: "Pending verification", value: stats.pendingVerification ?? 0, icon: BadgeCheck, accent: "bg-amber-500/12 text-amber-700" },
+        { label: "Critical risk", value: stats.criticalRisk ?? 0, icon: ShieldAlert, accent: "bg-rose-500/12 text-rose-700" },
+        { label: "Unassigned", value: stats.unassigned ?? 0, icon: Users, accent: "bg-indigo-500/12 text-indigo-700" },
+      ];
+    }
+
     return [
-      { label: "Total posts", value: posts.length, icon: FileText, accent: "bg-forest-900/10 text-forest-900" },
-      { label: "Active reports", value: active, icon: Clock, accent: "bg-amber-500/12 text-amber-700" },
-      { label: "Resolved", value: resolved, icon: CheckCircle2, accent: "bg-emerald-500/12 text-emerald-700" },
+      { label: "My complaints", value: stats.totalComplaints ?? 0, icon: FileText, accent: "bg-forest-900/10 text-forest-900" },
+      { label: "In progress", value: stats.activeComplaints ?? 0, icon: Timer, accent: "bg-amber-500/12 text-amber-700" },
+      { label: "Resolved", value: stats.resolvedComplaints ?? 0, icon: CheckCircle2, accent: "bg-emerald-500/12 text-emerald-700" },
+      { label: "Active alerts", value: stats.activeAlerts ?? 0, icon: AlertTriangle, accent: "bg-rose-500/12 text-rose-700" },
     ];
-  }, [posts]);
+  }, [stats, role]);
 
-  const recentPosts = posts.slice(0, 3);
+  const quickActions = useMemo(() => {
+    if (role === "Officer" || role === "Admin") {
+      return [
+        { to: PATHS.OFFICER_QUEUE, label: "Open complaint queue", icon: ClipboardList },
+        { to: PATHS.HOTSPOTS, label: "View hotspot map", icon: MapPinned },
+        { to: PATHS.ALERTS, label: "Review alerts", icon: AlertTriangle },
+        ...(role === "Admin"
+          ? [{ to: PATHS.ADMIN_USERS, label: "Manage users", icon: Users }]
+          : []),
+      ];
+    }
+
+    if (role === "Volunteer") {
+      return [
+        { to: PATHS.ASSIGNED, label: "Open assigned cases", icon: FileSearch },
+        { to: PATHS.HOTSPOTS, label: "View hotspot map", icon: MapPinned },
+        { to: PATHS.NOTIFICATIONS, label: "Check notifications", icon: AlertTriangle },
+      ];
+    }
+
+    return [
+      { to: PATHS.CREATE_POST, label: "Report a problem", icon: PlusCircle },
+      { to: PATHS.TRACK_POST, label: "Track my complaints", icon: FileText },
+      { to: PATHS.HOTSPOTS, label: "Explore hotspots", icon: MapPinned },
+      { to: PATHS.ANALYTICS, label: "View analytics", icon: BarChart3 },
+    ];
+  }, [role]);
+
+  const handleResendVerification = async () => {
+    setVerificationBusy(true);
+    setVerificationNotice("");
+    try {
+      await sendVerificationEmail();
+      setVerificationNotice("Verification email sent. Check your inbox and spam folder.");
+    } catch (sendError) {
+      setVerificationNotice(
+        sendError?.code === "auth/too-many-requests"
+          ? "Please wait a moment before requesting another verification email."
+          : sendError?.message || "The verification email could not be sent.",
+      );
+    } finally {
+      setVerificationBusy(false);
+    }
+  };
+
+  const handleRefreshVerification = async () => {
+    setVerificationBusy(true);
+    try {
+      await reloadCurrentUser();
+      await refreshProfile();
+      setVerificationNotice("Verification status refreshed.");
+    } catch {
+      setVerificationNotice("Unable to refresh verification status right now.");
+    } finally {
+      setVerificationBusy(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await downloadAdminReport();
+    } catch (exportError) {
+      setError(getApiErrorMessage(exportError));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
-      {/* Profile banner */}
+      {!verified && (
+        <Reveal>
+          <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <div>
+                <p className="text-[12px] font-bold text-amber-900">Verify your email address</p>
+                <p className="mt-0.5 text-[10px] leading-5 text-amber-800">
+                  A verification link was sent to {email || "your email"}. Verified accounts are
+                  trusted for official complaint communication.
+                </p>
+                {verificationNotice && (
+                  <p className="mt-1 text-[10px] font-semibold text-amber-900">{verificationNotice}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleResendVerification}
+                disabled={verificationBusy}
+              >
+                {verificationBusy ? "Please wait..." : "Resend email"}
+              </Button>
+              <Button type="button" size="sm" onClick={handleRefreshVerification} disabled={verificationBusy}>
+                Refresh status
+              </Button>
+            </div>
+          </div>
+        </Reveal>
+      )}
+
       <Reveal>
         <div className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-forest-950 via-forest-900 to-emerald-950 p-5 text-white shadow-[0_35px_90px_-45px_rgba(5,46,36,0.6)] sm:p-7">
           <div className="grid-pattern-dark pointer-events-none absolute inset-0 opacity-80" />
@@ -119,172 +251,188 @@ function Overview() {
               </span>
               <div className="min-w-0">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.08] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-lime-200">
-                  <ShieldCheck className="h-3 w-3" />
-                  {role}
+                  <BadgeCheck className="h-3 w-3" />
+                  {role} workspace
                 </span>
                 <h2 className="mt-2 truncate font-display text-xl font-extrabold tracking-[-0.04em] sm:text-2xl">
-                  {name}
+                  Welcome, {name}
                 </h2>
-                <p className="mt-0.5 truncate text-[12px] text-white/55">{email}</p>
+                <p className="mt-0.5 truncate text-[12px] text-white/55">
+                  {email} · Resolution rate {stats?.resolutionRate ?? 0}%
+                </p>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button to={PATHS.CREATE_POST} variant="lime" size="sm" className="gap-1.5">
-                <PlusCircle className="h-4 w-4" />
-                New post
-              </Button>
-              <Button to={PATHS.TRACK_POST} variant="darkOutline" size="sm" className="gap-1.5">
-                <Radar className="h-4 w-4" />
-                Track posts
+              {role === "Admin" && (
+                <Button
+                  type="button"
+                  variant="lime"
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className="gap-1.5"
+                >
+                  <Download className="h-4 w-4" />
+                  {exporting ? "Preparing PDF..." : "Export admin PDF"}
+                </Button>
+              )}
+              <Button to={PATHS.ANALYTICS} variant="darkOutline" size="sm" className="gap-1.5">
+                <BarChart3 className="h-4 w-4" />
+                Analytics
               </Button>
             </div>
-          </div>
-
-          <div className="relative mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-[10px] font-semibold text-white/50">
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays className="h-3.5 w-3.5 text-lime-300" />
-              Member since {formatDate(joined, "today")}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-lime-300" />
-              Citizen-powered reporting
-            </span>
           </div>
         </div>
       </Reveal>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {stats.map((stat, index) => (
-          <StatCard key={stat.label} {...stat} delay={index * 0.06} />
-        ))}
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-3">
-        {/* Personal details */}
-        <Reveal className="lg:col-span-1" delay={0.05}>
-          <div className="glass h-full rounded-[1.75rem] p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">
-                  Account
-                </p>
-                <h3 className="mt-1 font-display text-lg font-extrabold tracking-[-0.03em] text-forest-950">
-                  Personal details
-                </h3>
-              </div>
-              <span className="grid h-9 w-9 place-items-center rounded-xl border border-forest-900/10 bg-white/70 text-emerald-700">
-                <User className="h-4 w-4" />
-              </span>
-            </div>
-
-            <div className="mt-4 space-y-2.5">
-              <DetailRow icon={User} label="Full name" value={name} />
-              <DetailRow icon={Mail} label="Email address" value={email || "Not provided"} />
-              <DetailRow icon={ShieldCheck} label="Account role" value={role} />
-              <DetailRow icon={CalendarDays} label="Member since" value={formatDate(joined, "Today")} />
-              <DetailRow
-                icon={MapPin}
-                label="Reports submitted"
-                value={`${posts.length} post${posts.length === 1 ? "" : "s"}`}
-              />
-            </div>
-
-            <p className="mt-4 rounded-xl border border-forest-900/[0.06] bg-white/50 px-3.5 py-3 text-[10px] leading-5 text-slate-500">
-              Your account is secured by Firebase Authentication. Personal details are stored with your
-              profile and never shown publicly.
-            </p>
+      {loading ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((key) => (
+            <div key={key} className="h-20 animate-pulse rounded-2xl border border-white/70 bg-white/50" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[11px] font-medium text-rose-700">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <p className="flex-1">{error}</p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setError("");
+              setLoading(true);
+              setReloadKey((key) => key + 1);
+            }}
+            className="gap-1.5"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Try again
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {statCards.map((stat, index) => (
+              <StatCard key={stat.label} {...stat} delay={index * 0.04} />
+            ))}
           </div>
-        </Reveal>
 
-        {/* Posts */}
-        <Reveal className="lg:col-span-2" delay={0.1}>
-          <div className="glass h-full rounded-[1.75rem] p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
+          <div className="grid gap-5 lg:grid-cols-3">
+            <Reveal className="lg:col-span-2" delay={0.05}>
+              <div className="glass h-full rounded-[1.75rem] p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">
+                      Activity
+                    </p>
+                    <h3 className="mt-1 font-display text-lg font-extrabold tracking-[-0.03em] text-forest-950">
+                      Recent complaints
+                    </h3>
+                  </div>
+                  <Link
+                    to={
+                      role === "Volunteer"
+                        ? PATHS.ASSIGNED
+                        : role === "Citizen"
+                          ? PATHS.TRACK_POST
+                          : PATHS.OFFICER_QUEUE
+                    }
+                    className="text-[11px] font-bold text-emerald-700 hover:text-forest-900 hover:underline"
+                  >
+                    View all
+                  </Link>
+                </div>
+
+                {data?.recentComplaints?.length ? (
+                  <ul className="mt-4 space-y-2.5">
+                    {data.recentComplaints.map((post) => (
+                      <li key={post.id}>
+                        <Link
+                          to={complaintLink(role, post.id)}
+                          className="group block rounded-2xl border border-forest-900/[0.07] bg-white/60 p-3.5 transition-colors duration-300 hover:border-emerald-500/30 hover:bg-white/85"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="truncate text-[12px] font-bold text-forest-950">
+                                {post.title}
+                              </p>
+                              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-slate-500">
+                                <span>{post.category}</span>
+                                <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                <span>{post.area || "No area"}</span>
+                                <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                <span>{formatDateTime(post.createdAt)}</span>
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <RiskBadge level={post.riskLevel} />
+                              <StatusBadge status={post.status} />
+                            </div>
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="mt-4 rounded-2xl border border-dashed border-forest-900/15 bg-white/40 px-5 py-9 text-center">
+                    <FileText className="mx-auto h-6 w-6 text-emerald-700" />
+                    <p className="mt-2 font-display text-sm font-bold text-forest-950">
+                      No complaints in your workspace yet
+                    </p>
+                    <p className="mx-auto mt-1 max-w-sm text-[11px] leading-5 text-slate-500">
+                      {role === "Citizen"
+                        ? "Submit your first environmental complaint to start the accountability flow."
+                        : "New cases will appear here as soon as they are available."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.1}>
+              <div className="glass h-full rounded-[1.75rem] p-5">
                 <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">
-                  Activity
+                  Shortcuts
                 </p>
                 <h3 className="mt-1 font-display text-lg font-extrabold tracking-[-0.03em] text-forest-950">
-                  My posts
+                  Quick actions
                 </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full border border-forest-900/10 bg-white/70 px-2.5 py-1 text-[10px] font-bold text-slate-500">
-                  {posts.length} total
-                </span>
-                <Link
-                  to={PATHS.TRACK_POST}
-                  className="text-[11px] font-bold text-emerald-700 transition-colors hover:text-forest-900 hover:underline"
-                >
-                  View all
-                </Link>
-              </div>
-            </div>
 
-            {loading ? (
-              <div className="mt-4 space-y-2.5">
-                {[0, 1, 2].map((key) => (
-                  <div
-                    key={key}
-                    className="h-16 animate-pulse rounded-2xl border border-white/70 bg-white/50"
-                  />
-                ))}
-              </div>
-            ) : error ? (
-              <p
-                role="status"
-                className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[11px] font-medium text-rose-700"
-              >
-                {error}
-              </p>
-            ) : recentPosts.length === 0 ? (
-              <div className="mt-4 rounded-2xl border border-dashed border-forest-900/15 bg-white/40 px-5 py-9 text-center">
-                <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-700">
-                  <FileText className="h-5 w-5" />
-                </span>
-                <p className="mt-3 font-display text-sm font-bold text-forest-950">No posts yet</p>
-                <p className="mx-auto mt-1 max-w-xs text-[11px] leading-5 text-slate-500">
-                  Report your first environmental problem and it will show up here with live progress.
-                </p>
-                <Button to={PATHS.CREATE_POST} size="sm" className="mt-4 gap-1.5">
-                  <PlusCircle className="h-4 w-4" />
-                  Create your first post
-                </Button>
-              </div>
-            ) : (
-              <ul className="mt-4 space-y-2.5">
-                {recentPosts.map((post) => (
-                  <li key={post.id}>
+                <div className="mt-4 space-y-2">
+                  {quickActions.map(({ to, label, icon: Icon }) => (
                     <Link
-                      to={postDetailsPath(post.id)}
-                      className="group block rounded-2xl border border-forest-900/[0.07] bg-white/60 p-3.5 transition-colors duration-300 hover:border-emerald-500/30 hover:bg-white/85"
+                      key={to}
+                      to={to}
+                      className="group flex items-center gap-2.5 rounded-xl border border-forest-900/[0.07] bg-white/60 px-3 py-2.5 text-[11px] font-bold text-forest-950 transition-colors hover:border-emerald-500/30 hover:bg-white"
                     >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-[12px] font-bold text-forest-950">{post.title}</p>
-                          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-slate-500">
-                            <span className="inline-flex items-center gap-1">
-                              <MapPin className="h-3 w-3 text-emerald-600" />
-                              {post.location || "No location"}
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                              <CalendarDays className="h-3 w-3 text-emerald-600" />
-                              {formatDate(post.createdAt, "Just now")}
-                            </span>
-                          </p>
-                        </div>
-                        <StatusBadge status={post.status} />
-                      </div>
+                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500/10 text-emerald-700">
+                        <Icon className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="flex-1">{label}</span>
+                      <ArrowRight className="h-3 w-3 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-700" />
                     </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+                  ))}
+                </div>
+
+                <div className="mt-4 rounded-xl border border-forest-900/[0.06] bg-white/50 p-3.5">
+                  <p className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                    <CalendarDays className="h-3 w-3" />
+                    System snapshot
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] font-semibold text-slate-600">
+                    <span>Resolution rate: {stats?.resolutionRate ?? 0}%</span>
+                    <span>Active alerts: {stats?.activeAlerts ?? 0}</span>
+                    <span>Overdue: {stats?.overdue ?? 0}</span>
+                    <span>Unread: {stats?.unreadNotifications ?? 0}</span>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
           </div>
-        </Reveal>
-      </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,64 +1,218 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertTriangle,
   ArrowLeft,
+  BarChart3,
+  Bell,
+  ClipboardList,
+  FileSearch,
   LayoutDashboard,
   Leaf,
   LogOut,
+  MapPinned,
   Menu,
   PlusCircle,
   Radar,
+  Settings,
   ShieldCheck,
+  SlidersHorizontal,
+  UserCog,
+  Users,
   X,
 } from "lucide-react";
 import Logo from "../../components/common/Logo";
 import Button from "../../components/ui/Button";
+import NotificationBell from "../../features/notifications/components/NotificationBell";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { logoutUser } from "../../features/auth/services/authServices";
 import { initialsFromName } from "../../utils/format";
 import { PATHS } from "../../utils/paths";
 import { cn } from "../../utils/cn";
 
-const navItems = [
-  {
+const sharedItems = [
+  { label: "Hotspot Map", description: "Spatial risk view", to: PATHS.HOTSPOTS, icon: MapPinned },
+  { label: "Analytics", description: "Environmental trends", to: PATHS.ANALYTICS, icon: BarChart3 },
+  { label: "Hotspot Alerts", description: "Automatic thresholds", to: PATHS.ALERTS, icon: AlertTriangle },
+  { label: "Notifications", description: "Assignments & updates", to: PATHS.NOTIFICATIONS, icon: Bell },
+  { label: "Settings", description: "Profile & account", to: PATHS.SETTINGS, icon: Settings },
+];
+
+function navItemsForRole(role) {
+  const overview = {
     label: "Overview",
-    description: "Profile & latest posts",
+    description: "Dashboard summary",
     to: PATHS.DASHBOARD,
     icon: LayoutDashboard,
     end: true,
-  },
-  {
-    label: "Create Post",
-    description: "Report an issue",
-    to: PATHS.CREATE_POST,
-    icon: PlusCircle,
-  },
-  {
-    label: "Track Post",
-    description: "Follow progress",
-    to: PATHS.TRACK_POST,
-    icon: Radar,
-  },
-];
+  };
+
+  if (role === "Officer" || role === "Admin") {
+    const queue = {
+      label: "Complaint Queue",
+      description: "Review & dispatch",
+      to: PATHS.OFFICER_QUEUE,
+      icon: ClipboardList,
+    };
+
+    const adminItems =
+      role === "Admin"
+        ? [
+            { label: "User Management", description: "Roles & access", to: PATHS.ADMIN_USERS, icon: Users },
+            {
+              label: "Configuration",
+              description: "Categories & rules",
+              to: PATHS.ADMIN_CONFIG,
+              icon: SlidersHorizontal,
+            },
+            { label: "Audit Logs", description: "Timestamped activity", to: PATHS.ADMIN_AUDIT, icon: UserCog },
+          ]
+        : [];
+
+    return [overview, queue, ...sharedItems.slice(0, 4), ...adminItems, sharedItems[4]];
+  }
+
+  if (role === "Volunteer") {
+    return [
+      overview,
+      {
+        label: "Assigned Cases",
+        description: "Field investigations",
+        to: PATHS.ASSIGNED,
+        icon: FileSearch,
+      },
+      ...sharedItems,
+    ];
+  }
+
+  return [
+    overview,
+    {
+      label: "New Complaint",
+      description: "Report an issue",
+      to: PATHS.CREATE_POST,
+      icon: PlusCircle,
+    },
+    {
+      label: "My Complaints",
+      description: "Track progress",
+      to: PATHS.TRACK_POST,
+      icon: Radar,
+    },
+    ...sharedItems,
+  ];
+}
 
 const pageMeta = {
   [PATHS.DASHBOARD]: {
-    eyebrow: "My profile",
+    eyebrow: "Dashboard",
     title: "Overview",
-    subtitle: "Your account details and everything you have reported so far.",
+    subtitle: "Your environmental activity, live complaint metrics and priority actions.",
   },
   [PATHS.CREATE_POST]: {
     eyebrow: "New report",
-    title: "Create Post",
-    subtitle: "Share an environmental problem with the details officers need to act.",
+    title: "Submit a complaint",
+    subtitle: "Share an environmental problem with the evidence officers need to act.",
   },
   [PATHS.TRACK_POST]: {
-    eyebrow: "Progress",
-    title: "Track Post",
-    subtitle: "Follow each report from submission through to resolution.",
+    eyebrow: "Citizen workspace",
+    title: "My complaints",
+    subtitle: "Follow each report from submission through investigation and resolution.",
+  },
+  [PATHS.OFFICER_QUEUE]: {
+    eyebrow: "Officer workspace",
+    title: "Complaint queue",
+    subtitle: "Verify, categorise, prioritise and dispatch environmental cases.",
+  },
+  [PATHS.ASSIGNED]: {
+    eyebrow: "Volunteer workspace",
+    title: "Assigned cases",
+    subtitle: "Investigate field cases, record observations and submit reports.",
+  },
+  [PATHS.HOTSPOTS]: {
+    eyebrow: "Environmental intelligence",
+    title: "Hotspot map",
+    subtitle: "Explore complaint clusters, pollution risk levels and affected areas.",
+  },
+  [PATHS.ANALYTICS]: {
+    eyebrow: "Environmental intelligence",
+    title: "Analytics",
+    subtitle: "Live category, severity, status and trend analysis from the database.",
+  },
+  [PATHS.ALERTS]: {
+    eyebrow: "Environmental intelligence",
+    title: "Hotspot alerts",
+    subtitle: "Automatic threshold alerts, acknowledgement and resolution.",
+  },
+  [PATHS.NOTIFICATIONS]: {
+    eyebrow: "Account",
+    title: "Notifications",
+    subtitle: "Assignments, complaint updates, verification and hotspot alerts.",
+  },
+  [PATHS.SETTINGS]: {
+    eyebrow: "Account",
+    title: "Settings",
+    subtitle: "Manage your profile, verification and account security.",
+  },
+  [PATHS.ADMIN_USERS]: {
+    eyebrow: "Administration",
+    title: "User management",
+    subtitle: "Manage roles, permissions and account status across the platform.",
+  },
+  [PATHS.ADMIN_CONFIG]: {
+    eyebrow: "Administration",
+    title: "Platform configuration",
+    subtitle: "Environmental categories, severity levels, risk rules and alert thresholds.",
+  },
+  [PATHS.ADMIN_AUDIT]: {
+    eyebrow: "Administration",
+    title: "Audit logs",
+    subtitle: "Immutable, timestamped records of important platform actions.",
   },
 };
+
+function metaForPath(pathname) {
+  if (pageMeta[pathname]) return pageMeta[pathname];
+
+  if (/^\/dashboard\/complaints\/[^/]+$/.test(pathname)) {
+    return {
+      eyebrow: "Officer workspace",
+      title: "Complaint workspace",
+      subtitle: "Verify the case, detect duplicates, dispatch volunteers and record actions.",
+    };
+  }
+
+  if (/^\/dashboard\/assigned\/[^/]+$/.test(pathname)) {
+    return {
+      eyebrow: "Volunteer workspace",
+      title: "Investigation workspace",
+      subtitle: "Record observations, GPS evidence and submit the field report.",
+    };
+  }
+
+  if (/^\/dashboard\/track-post\/[^/]+$/.test(pathname)) {
+    return {
+      eyebrow: "Citizen workspace",
+      title: "Complaint details",
+      subtitle: "Live status history, evidence and resolution feedback for this complaint.",
+    };
+  }
+
+  if (/^\/dashboard\/create-post\/[^/]+\/edit$/.test(pathname)) {
+    return {
+      eyebrow: "Citizen workspace",
+      title: "Edit complaint",
+      subtitle: "Update the details before officers begin the investigation.",
+    };
+  }
+
+  return {
+    eyebrow: "Dashboard",
+    title: "Overview",
+    subtitle: "Manage your environmental reports and account.",
+  };
+}
 
 function SidebarLink({ item, onNavigate }) {
   const Icon = item.icon;
@@ -159,35 +313,14 @@ function DashboardLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [flash] = useState(location.state?.message || "");
 
-  const name = profile?.name || user?.displayName || "EcoTrack member";
+  const name = profile?.name || user?.displayName || "Nature360 member";
   const email = profile?.email || user?.email || "";
   const role = profile?.role || "Citizen";
 
-  const isComplaintDetails = location.pathname.startsWith(`${PATHS.TRACK_POST}/`);
-
-  const meta =
-    pageMeta[location.pathname] ??
-    (isComplaintDetails
-      ? {
-          eyebrow: "Complaint tracking",
-          title: "Complaint details",
-          subtitle: "Live status history, evidence and resolution actions for this complaint.",
-        }
-      : {
-          eyebrow: "Dashboard",
-          title: "Overview",
-          subtitle: "Manage your reports and profile.",
-        });
-
-  useEffect(() => {
-    if (!mobileOpen) return undefined;
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") setMobileOpen(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [mobileOpen]);
+  const navItems = useMemo(() => navItemsForRole(role), [role]);
+  const meta = metaForPath(location.pathname);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -207,7 +340,6 @@ function DashboardLayout() {
       <div className="grid-pattern pointer-events-none fixed inset-0 opacity-50" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-[100rem] lg:gap-6 lg:px-6 lg:py-6">
-        {/* Desktop sidebar */}
         <aside className="thin-scrollbar sticky top-6 hidden h-[calc(100vh-3rem)] w-72 shrink-0 flex-col overflow-y-auto overscroll-contain rounded-[2rem] border border-white/75 bg-white/70 p-5 shadow-[0_30px_90px_-45px_rgba(5,46,36,0.45)] backdrop-blur-xl lg:flex">
           <Logo />
 
@@ -235,10 +367,10 @@ function DashboardLayout() {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Mobile top bar */}
           <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-white/60 bg-mist/85 px-4 py-3 backdrop-blur-xl sm:px-6 lg:hidden">
             <Logo />
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-forest-900 via-emerald-700 to-emerald-600 text-[10px] font-extrabold text-lime-200">
                 {initialsFromName(name, email)}
               </span>
@@ -270,23 +402,31 @@ function DashboardLayout() {
                 </p>
               </div>
 
-              <div className="hidden shrink-0 items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-2 shadow-sm backdrop-blur lg:inline-flex">
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-forest-950 text-[9px] font-bold text-lime-300">
-                  {initialsFromName(name, email)}
-                </span>
-                <div className="pr-1">
-                  <p className="text-[11px] font-bold leading-tight text-forest-950">{name}</p>
-                  <p className="text-[9px] leading-tight text-slate-400">{role}</p>
+              <div className="hidden shrink-0 items-center gap-2 lg:flex">
+                <NotificationBell />
+                <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-2 shadow-sm backdrop-blur">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-forest-950 text-[9px] font-bold text-lime-300">
+                    {initialsFromName(name, email)}
+                  </span>
+                  <div className="pr-1">
+                    <p className="text-[11px] font-bold leading-tight text-forest-950">{name}</p>
+                    <p className="text-[9px] leading-tight text-slate-400">{role}</p>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {flash && (
+              <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[11px] font-semibold text-amber-800">
+                {flash}
+              </div>
+            )}
 
             <Outlet />
           </main>
         </div>
       </div>
 
-      {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -346,7 +486,7 @@ function DashboardLayout() {
                 </Button>
                 <p className="flex items-center justify-center gap-1.5 text-[9px] font-medium text-slate-400">
                   <Leaf className="h-3 w-3" />
-                  EcoTrack · Environmental Monitoring
+                  Nature360 · Environmental Monitoring
                 </p>
               </div>
             </motion.aside>

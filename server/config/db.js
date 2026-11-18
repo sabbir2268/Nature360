@@ -7,10 +7,24 @@ const SERVER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const EMBEDDED_DB_PATH = path.join(SERVER_ROOT, ".data", "mongodb");
 
 let embeddedServer = null;
+let connectionEventsBound = false;
 
 function embeddedFallbackEnabled() {
   if (process.env.NODE_ENV === "production") return false;
   return process.env.MONGODB_EMBEDDED_FALLBACK === "true";
+}
+
+function bindConnectionEvents() {
+  if (connectionEventsBound) return;
+  connectionEventsBound = true;
+
+  mongoose.connection.on("disconnected", () => {
+    console.warn("MongoDB disconnected.");
+  });
+
+  mongoose.connection.on("reconnected", () => {
+    console.log("MongoDB reconnected.");
+  });
 }
 
 /**
@@ -53,6 +67,8 @@ export async function connectDB() {
       "MONGODB_URI is missing. Add your MongoDB connection string to server/.env.",
     );
   }
+
+  bindConnectionEvents();
 
   try {
     await mongoose.connect(uri, {

@@ -1,4 +1,4 @@
-import { apiRequest } from "../../../lib/api";
+import { apiRequest, buildQuery } from "../../../lib/api";
 
 export const POST_STATUSES = [
   "Submitted",
@@ -7,7 +7,10 @@ export const POST_STATUSES = [
   "Investigation",
   "Action Taken",
   "Resolved",
+  "Rejected",
 ];
+
+export const WORKFLOW_STATUSES = POST_STATUSES.filter((status) => status !== "Rejected");
 
 export const POST_CATEGORIES = [
   "Illegal Dumping",
@@ -18,7 +21,9 @@ export const POST_CATEGORIES = [
   "Other",
 ];
 
-export const POST_SEVERITIES = ["Low", "Medium", "High"];
+export const POST_SEVERITIES = ["Low", "Medium", "High", "Critical"];
+
+export const PRIORITIES = ["Low", "Medium", "High", "Urgent"];
 
 export const RESOLUTION_ACTIONS = [
   "Confirmed",
@@ -28,37 +33,45 @@ export const RESOLUTION_ACTIONS = [
   "Incorrect Resolution",
 ];
 
-/** Citizen responses are only allowed while the complaint is "Resolved". */
 export const MESSAGE_REQUIRED_ACTIONS = ["Feedback", "Reopened", "Incorrect Resolution"];
 
-export const ALLOWED_EVIDENCE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "application/pdf",
-];
-
-export const MAX_EVIDENCE_BYTES = 2 * 1024 * 1024;
-
-export async function createPost({ title, category, severity, location, description }) {
-  const data = await apiRequest("/posts", {
-    method: "POST",
-    body: { title, category, severity, location, description },
-  });
-
-  return data.post;
+/** Complaints are scoped to the signed-in user by the API. */
+export async function getUserPosts(params = {}) {
+  const data = await apiRequest(`/posts${buildQuery(params)}`);
+  return data.posts || [];
 }
 
-/** Complaints are scoped to the signed-in citizen by the API. */
-export async function getUserPosts() {
-  const data = await apiRequest("/posts");
-  return data.posts || [];
+export async function listComplaints(params = {}) {
+  const data = await apiRequest(`/posts${buildQuery(params)}`);
+  return {
+    posts: data.posts || [],
+    pagination: data.pagination,
+  };
+}
+
+export async function createPost(payload) {
+  const data = await apiRequest("/posts", {
+    method: "POST",
+    body: payload,
+  });
+  return data.post;
 }
 
 export async function getPost(postId) {
   const data = await apiRequest(`/posts/${postId}`);
   return data.post;
+}
+
+export async function updatePost(postId, payload) {
+  const data = await apiRequest(`/posts/${postId}`, {
+    method: "PATCH",
+    body: payload,
+  });
+  return data.post;
+}
+
+export async function deletePost(postId) {
+  return apiRequest(`/posts/${postId}`, { method: "DELETE" });
 }
 
 /** Submit a citizen resolution response (confirm, feedback, evidence, reopen, wrong). */
@@ -71,7 +84,7 @@ export async function submitResolutionResponse(postId, { action, message = "", e
   return { post: data.post, message: data.message || "Your response was recorded." };
 }
 
-/** Change the status of a post and record it in the history. */
+/** Legacy helper retained for officer status updates. */
 export async function updatePostStatus(postId, { status, note = "" }) {
   const data = await apiRequest(`/posts/${postId}/status`, {
     method: "PATCH",

@@ -7,6 +7,7 @@ const statusStyles = {
   Investigation: "border-indigo-200/80 bg-indigo-50 text-indigo-700",
   "Action Taken": "border-violet-200/80 bg-violet-50 text-violet-700",
   Resolved: "border-emerald-200/80 bg-emerald-50 text-emerald-700",
+  Rejected: "border-rose-200/80 bg-rose-50 text-rose-700",
 };
 
 const statusDots = {
@@ -16,6 +17,7 @@ const statusDots = {
   Investigation: "bg-indigo-500",
   "Action Taken": "bg-violet-500",
   Resolved: "bg-emerald-500",
+  Rejected: "bg-rose-500",
 };
 
 function StatusBadge({ status = "Submitted", className = "" }) {

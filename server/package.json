@@ -5,15 +5,19 @@
   "description": "Nature360 complaint tracking API (Express + MongoDB)",
   "type": "module",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.17"
+  },
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch index.js"
+    "dev": "node --watch-path=index.js --watch-path=config --watch-path=middleware --watch-path=models --watch-path=routes index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
-    "mongoose": "^8.9.5"
+    "mongoose": "^8.9.5",
+    "pdfkit": "^0.20.2"
   },
   "devDependencies": {
     "mongodb-memory-server": "^11.3.0"

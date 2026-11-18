@@ -16,12 +16,13 @@ import Button from "../../../components/ui/Button";
 import { getApiErrorMessage } from "../../../lib/api";
 import { formatDateTime } from "../../../utils/format";
 import { cn } from "../../../utils/cn";
+import { MESSAGE_REQUIRED_ACTIONS, submitResolutionResponse } from "../services/postServices";
 import {
   ALLOWED_EVIDENCE_TYPES,
-  MAX_EVIDENCE_BYTES,
-  MESSAGE_REQUIRED_ACTIONS,
-  submitResolutionResponse,
-} from "../services/postServices";
+  formatFileSize,
+  uploadEvidence,
+  validateEvidenceFile,
+} from "../../../lib/storage";
 
 const actionOptions = [
   {
@@ -41,7 +42,7 @@ const actionOptions = [
   {
     value: "Additional Evidence",
     label: "Add evidence",
-    hint: "Attach a photo or PDF (max 2 MB).",
+    hint: "Attach a photo, video or PDF (max 25 MB).",
     icon: Paperclip,
     activeClass: "border-indigo-500/50 bg-indigo-50 text-indigo-800",
   },
@@ -76,22 +77,6 @@ const resolutionStateStyles = {
   Disputed: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("The selected file could not be read."));
-    reader.readAsDataURL(file);
-  });
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return "0 KB";
-  return bytes >= 1024 * 1024
-    ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
-
 function ResolutionFeedback({ post, onUpdated }) {
   const alreadyConfirmed = post.resolutionStatus === "Confirmed";
   const [action, setAction] = useState(alreadyConfirmed ? "Feedback" : "Confirmed");
@@ -116,15 +101,9 @@ function ResolutionFeedback({ post, onUpdated }) {
       return;
     }
 
-    if (!ALLOWED_EVIDENCE_TYPES.includes(chosen.type)) {
-      setError("Evidence must be a JPG, PNG, WebP, GIF or PDF file.");
-      setFile(null);
-      event.target.value = "";
-      return;
-    }
-
-    if (chosen.size > MAX_EVIDENCE_BYTES) {
-      setError("Evidence must be no more than 2 MB.");
+    const validationError = validateEvidenceFile(chosen);
+    if (validationError) {
+      setError(validationError);
       setFile(null);
       event.target.value = "";
       return;
@@ -165,8 +144,7 @@ function ResolutionFeedback({ post, onUpdated }) {
     try {
       let evidence = null;
       if (file) {
-        const data = await readFileAsDataUrl(file);
-        evidence = { name: file.name, mimeType: file.type, size: file.size, data };
+        evidence = await uploadEvidence(file, `complaints/${post.id}/responses`);
       }
 
       const result = await submitResolutionResponse(post.id, {
@@ -308,7 +286,7 @@ function ResolutionFeedback({ post, onUpdated }) {
               <div className="mt-2 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-[10px] font-semibold text-emerald-800">
                 <FileText className="h-3.5 w-3.5 shrink-0" />
                 <span className="min-w-0 flex-1 truncate">{file.name}</span>
-                <span className="shrink-0 text-emerald-600">{formatBytes(file.size)}</span>
+                <span className="shrink-0 text-emerald-600">{formatFileSize(file.size)}</span>
                 <button
                   type="button"
                   onClick={clearFile}
@@ -321,7 +299,7 @@ function ResolutionFeedback({ post, onUpdated }) {
             ) : (
               <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-400">
                 <Upload className="h-3 w-3" />
-                JPG, PNG, WebP, GIF or PDF · up to 2 MB
+                JPG, PNG, WebP, GIF, MP4, WebM, MOV or PDF · up to 25 MB
               </p>
             )}
           </div>
@@ -402,14 +380,16 @@ function ResolutionFeedback({ post, onUpdated }) {
                   )}
                   {entry.evidence?.name && (
                     <a
-                      href={entry.evidence.data}
+                      href={entry.evidence.url || entry.evidence.data}
+                      target="_blank"
+                      rel="noreferrer"
                       download={entry.evidence.name}
                       className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 transition-colors hover:bg-indigo-100"
                     >
                       <Paperclip className="h-3 w-3 shrink-0" />
                       <span className="truncate">{entry.evidence.name}</span>
                       <span className="shrink-0 font-medium text-indigo-500">
-                        {formatBytes(entry.evidence.size)}
+                        {formatFileSize(entry.evidence.size)}
                       </span>
                     </a>
                   )}
