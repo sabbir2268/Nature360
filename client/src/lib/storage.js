@@ -63,26 +63,9 @@ export async function uploadEvidence(file, folder = "complaints") {
   const validationError = validateEvidenceFile(file);
   if (validationError) throw new Error(validationError);
 
-  const user = auth.currentUser;
-  if (!user) throw new Error("Please sign in again before uploading evidence.");
-
-  try {
-    const path = `${folder}/${user.uid}/${Date.now()}-${safeName(file.name)}`;
-    const objectRef = ref(storage, path);
-    await uploadBytes(objectRef, file, { contentType: file.type });
-    const url = await getDownloadURL(objectRef);
-
-    return {
-      name: file.name,
-      mimeType: file.type,
-      size: file.size,
-      url,
-      path,
-    };
-  } catch (error) {
-    if (!ALLOW_INLINE_EVIDENCE) throw error;
+  if (ALLOW_INLINE_EVIDENCE) {
     if (file.size > MAX_INLINE_BYTES) {
-      throw new Error("Firebase Storage is unavailable. Inline evidence is limited to 2 MB.");
+      throw new Error("Inline evidence is limited to 2 MB. Configure Firebase Storage for larger files.");
     }
 
     const data = await readAsDataUrl(file);
@@ -95,6 +78,22 @@ export async function uploadEvidence(file, folder = "complaints") {
       data,
     };
   }
+
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please sign in again before uploading evidence.");
+
+  const path = `${folder}/${user.uid}/${Date.now()}-${safeName(file.name)}`;
+  const objectRef = ref(storage, path);
+  await uploadBytes(objectRef, file, { contentType: file.type });
+  const url = await getDownloadURL(objectRef);
+
+  return {
+    name: file.name,
+    mimeType: file.type,
+    size: file.size,
+    url,
+    path,
+  };
 }
 
 export async function uploadEvidenceList(files, folder = "complaints") {

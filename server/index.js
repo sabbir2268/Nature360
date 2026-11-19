@@ -27,7 +27,7 @@ const app = express();
 
 app.disable("x-powered-by");
 app.use(cors({ origin: CORS_ORIGIN.includes("*") ? true : CORS_ORIGIN }));
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "25mb" }));
 
 app.get("/api/health", (req, res) => {
   res.json({
