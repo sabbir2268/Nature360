@@ -25,10 +25,6 @@ import { RiskBadge } from "../../../components/ui/Badge";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { getDashboardOverview } from "../../dashboard/services/dashboardServices";
 import { downloadAdminReport } from "../../admin/services/adminServices";
-import {
-  reloadCurrentUser,
-  sendVerificationEmail,
-} from "../../auth/services/authServices";
 import { getApiErrorMessage } from "../../../lib/api";
 import { formatDateTime, initialsFromName } from "../../../utils/format";
 import {
@@ -66,19 +62,16 @@ function complaintLink(role, postId) {
 }
 
 function Overview() {
-  const { profile, user, refreshProfile } = useAuth();
+  const { profile, user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
-  const [verificationNotice, setVerificationNotice] = useState("");
-  const [verificationBusy, setVerificationBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const role = profile?.role || "Citizen";
   const name = profile?.name || user?.displayName || "Nature360 member";
   const email = profile?.email || user?.email || "";
-  const verified = Boolean(profile?.emailVerified || user?.emailVerified);
 
   useEffect(() => {
     let active = true;
@@ -156,40 +149,8 @@ function Overview() {
     return [
       { to: PATHS.CREATE_POST, label: "Report a problem", icon: PlusCircle },
       { to: PATHS.TRACK_POST, label: "Track my complaints", icon: FileText },
-      { to: PATHS.HOTSPOTS, label: "Explore hotspots", icon: MapPinned },
-      { to: PATHS.ANALYTICS, label: "View analytics", icon: BarChart3 },
     ];
   }, [role]);
-
-  const handleResendVerification = async () => {
-    setVerificationBusy(true);
-    setVerificationNotice("");
-    try {
-      await sendVerificationEmail();
-      setVerificationNotice("Verification email sent. Check your inbox and spam folder.");
-    } catch (sendError) {
-      setVerificationNotice(
-        sendError?.code === "auth/too-many-requests"
-          ? "Please wait a moment before requesting another verification email."
-          : sendError?.message || "The verification email could not be sent.",
-      );
-    } finally {
-      setVerificationBusy(false);
-    }
-  };
-
-  const handleRefreshVerification = async () => {
-    setVerificationBusy(true);
-    try {
-      await reloadCurrentUser();
-      await refreshProfile();
-      setVerificationNotice("Verification status refreshed.");
-    } catch {
-      setVerificationNotice("Unable to refresh verification status right now.");
-    } finally {
-      setVerificationBusy(false);
-    }
-  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -204,40 +165,6 @@ function Overview() {
 
   return (
     <div className="space-y-5">
-      {!verified && (
-        <Reveal>
-          <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-2.5">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-              <div>
-                <p className="text-[12px] font-bold text-amber-900">Verify your email address</p>
-                <p className="mt-0.5 text-[10px] leading-5 text-amber-800">
-                  A verification link was sent to {email || "your email"}. Verified accounts are
-                  trusted for official complaint communication.
-                </p>
-                {verificationNotice && (
-                  <p className="mt-1 text-[10px] font-semibold text-amber-900">{verificationNotice}</p>
-                )}
-              </div>
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleResendVerification}
-                disabled={verificationBusy}
-              >
-                {verificationBusy ? "Please wait..." : "Resend email"}
-              </Button>
-              <Button type="button" size="sm" onClick={handleRefreshVerification} disabled={verificationBusy}>
-                Refresh status
-              </Button>
-            </div>
-          </div>
-        </Reveal>
-      )}
-
       <Reveal>
         <div className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-forest-950 via-forest-900 to-emerald-950 p-5 text-white shadow-[0_35px_90px_-45px_rgba(5,46,36,0.6)] sm:p-7">
           <div className="grid-pattern-dark pointer-events-none absolute inset-0 opacity-80" />
@@ -277,10 +204,12 @@ function Overview() {
                   {exporting ? "Preparing PDF..." : "Export admin PDF"}
                 </Button>
               )}
-              <Button to={PATHS.ANALYTICS} variant="darkOutline" size="sm" className="gap-1.5">
-                <BarChart3 className="h-4 w-4" />
-                Analytics
-              </Button>
+              {role !== "Citizen" && (
+                <Button to={PATHS.ANALYTICS} variant="darkOutline" size="sm" className="gap-1.5">
+                  <BarChart3 className="h-4 w-4" />
+                  Analytics
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -100,7 +100,7 @@ function navItemsForRole(role) {
       to: PATHS.TRACK_POST,
       icon: Radar,
     },
-    ...sharedItems,
+    ...sharedItems.slice(3),
   ];
 }
 

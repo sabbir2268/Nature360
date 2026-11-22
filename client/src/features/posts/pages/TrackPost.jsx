@@ -16,18 +16,18 @@ import {
 import Reveal from "../../../components/ui/Reveal";
 import Button from "../../../components/ui/Button";
 import StatusBadge from "../components/StatusBadge";
-import { POST_STATUSES, WORKFLOW_STATUSES, getUserPosts } from "../services/postServices";
+import { WORKFLOW_STATUSES, getUserPosts } from "../services/postServices";
 import { getApiErrorMessage } from "../../../lib/api";
 import { formatDateTime } from "../../../utils/format";
 import { PATHS, postDetailsPath } from "../../../utils/paths";
 import { cn } from "../../../utils/cn";
 
+const FILTER_STATUSES = ["Submitted", "Verified", "Action Taken", "Resolved", "Rejected"];
+
 const filterIcons = {
   All: CircleDot,
   Submitted: CircleDot,
-  "Under Review": FileSearch,
   Verified: ShieldCheck,
-  Investigation: FileSearch,
   "Action Taken": Clock3,
   Resolved: CircleCheck,
   Rejected: AlertCircle,
@@ -97,7 +97,7 @@ function TrackPost() {
 
   const counts = useMemo(() => {
     const result = { All: posts.length };
-    POST_STATUSES.forEach((status) => {
+    FILTER_STATUSES.forEach((status) => {
       result[status] = posts.filter((post) => post.status === status).length;
     });
     return result;
@@ -129,7 +129,7 @@ function TrackPost() {
 
       <Reveal>
         <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          {["All", ...POST_STATUSES].map((status) => {
+          {["All", ...FILTER_STATUSES].map((status) => {
             const Icon = filterIcons[status] ?? CircleDot;
             const isActive = filter === status;
 

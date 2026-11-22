@@ -65,9 +65,14 @@ export const router = createBrowserRouter([
           { path: "create-post/:postId/edit", element: <EditPost /> },
           { path: "track-post", element: <TrackPost /> },
           { path: "track-post/:postId", element: <PostDetails /> },
-          { path: "hotspots", element: <HotspotMapPage /> },
-          { path: "analytics", element: <AnalyticsPage /> },
-          { path: "alerts", element: <AlertsPage /> },
+          {
+            element: <RoleRoute roles={["Officer", "Volunteer", "Admin"]} />,
+            children: [
+              { path: "hotspots", element: <HotspotMapPage /> },
+              { path: "analytics", element: <AnalyticsPage /> },
+              { path: "alerts", element: <AlertsPage /> },
+            ],
+          },
           { path: "notifications", element: <NotificationsPage /> },
           { path: "settings", element: <SettingsPage /> },
 
