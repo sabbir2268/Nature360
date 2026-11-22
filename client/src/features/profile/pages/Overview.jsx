@@ -130,15 +130,10 @@ function Overview() {
     if (role === "Officer" || role === "Admin") {
       return [
         { to: PATHS.OFFICER_QUEUE, label: "Open complaint queue", icon: ClipboardList },
+        { to: PATHS.HOTSPOT_INTELLIGENCE, label: "Open hotspot intelligence", icon: MapPinned },
         ...(role === "Admin"
-          ? [
-              { to: PATHS.HOTSPOT_INTELLIGENCE, label: "Open hotspot intelligence", icon: MapPinned },
-              { to: PATHS.ADMIN_USERS, label: "Manage users", icon: Users },
-            ]
-          : [
-              { to: PATHS.HOTSPOTS, label: "View hotspot map", icon: MapPinned },
-              { to: PATHS.ALERTS, label: "Review alerts", icon: AlertTriangle },
-            ]),
+          ? [{ to: PATHS.ADMIN_USERS, label: "Manage users", icon: Users }]
+          : []),
       ];
     }
 

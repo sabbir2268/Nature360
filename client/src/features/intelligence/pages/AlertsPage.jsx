@@ -121,26 +121,17 @@ function AlertsPage({ embedded = false }) {
 
   return (
     <div className="space-y-5">
-      {embedded ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">
-              FR-11
-            </p>
-            <h2 className="mt-1 font-display text-lg font-extrabold tracking-[-0.03em] text-forest-950">
-              Hotspot alerts
-            </h2>
-          </div>
-          <div className="flex flex-wrap gap-2">{headerActions}</div>
-        </div>
-      ) : (
-        <PageHeader
-          eyebrow="FR-11"
-          title="Hotspot alerts"
-          description="Automatic alerts fire when a category and area cross the configured report threshold, so repeat pollution is not missed."
-          actions={headerActions}
-        />
-      )}
+      <PageHeader
+        compact={embedded}
+        eyebrow="FR-11"
+        title="Hotspot alerts"
+        description={
+          embedded
+            ? undefined
+            : "Automatic alerts fire when a category and area cross the configured report threshold, so repeat pollution is not missed."
+        }
+        actions={headerActions}
+      />
 
       {flash && (
         <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-[11px] font-semibold text-emerald-800">

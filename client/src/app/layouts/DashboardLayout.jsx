@@ -56,19 +56,12 @@ function navItemsForRole(role) {
       icon: ClipboardList,
     };
 
-    const hotspotItem =
-      role === "Admin"
-        ? [
-            {
-              label: "Hotspot Intelligence",
-              description: "Map & alerts",
-              to: PATHS.HOTSPOT_INTELLIGENCE,
-              icon: MapPinned,
-            },
-          ]
-        : [sharedItems[0]];
-
-    const alertItem = role === "Admin" ? [] : [sharedItems[2]];
+    const hotspotItem = {
+      label: "Hotspot Intelligence",
+      description: "Map & alerts",
+      to: PATHS.HOTSPOT_INTELLIGENCE,
+      icon: MapPinned,
+    };
 
     const adminItems =
       role === "Admin"
@@ -87,9 +80,8 @@ function navItemsForRole(role) {
     return [
       overview,
       queue,
-      ...hotspotItem,
+      hotspotItem,
       sharedItems[1],
-      ...alertItem,
       sharedItems[3],
       ...adminItems,
       sharedItems[4],
