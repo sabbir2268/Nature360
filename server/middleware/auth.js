@@ -75,10 +75,7 @@ export async function requireAuth(req, res, next) {
       });
     }
 
-    const existing = await User.findOne({ uid: firebaseUser.uid });
     const bootstrapRole = bootstrappedRole(firebaseUser.email);
-    const effectiveRole =
-      bootstrapRole || existing?.role || "Citizen";
 
     const user = await User.findOneAndUpdate(
       { uid: firebaseUser.uid },
@@ -91,7 +88,6 @@ export async function requireAuth(req, res, next) {
         },
         $setOnInsert: {
           name: firebaseUser.name,
-          role: bootstrapRole || effectiveRole,
           status: "Active",
         },
       },

@@ -104,6 +104,29 @@ function navItemsForRole(role) {
   ];
 }
 
+const PAGES_WITH_OWN_HEADER = new Set([
+  PATHS.CREATE_POST,
+  PATHS.TRACK_POST,
+  PATHS.OFFICER_QUEUE,
+  PATHS.ASSIGNED,
+  PATHS.HOTSPOTS,
+  PATHS.ANALYTICS,
+  PATHS.ALERTS,
+  PATHS.NOTIFICATIONS,
+  PATHS.SETTINGS,
+  PATHS.ADMIN_USERS,
+  PATHS.ADMIN_CONFIG,
+  PATHS.ADMIN_AUDIT,
+]);
+
+function hasOwnPageHeader(pathname) {
+  return (
+    PAGES_WITH_OWN_HEADER.has(pathname) ||
+    /^\/dashboard\/complaints\/[^/]+$/.test(pathname) ||
+    /^\/dashboard\/assigned\/[^/]+$/.test(pathname)
+  );
+}
+
 const pageMeta = {
   [PATHS.DASHBOARD]: {
     eyebrow: "Dashboard",
@@ -172,7 +195,14 @@ const pageMeta = {
   },
 };
 
-function metaForPath(pathname) {
+function metaForPath(pathname, role) {
+  if (pathname === PATHS.DASHBOARD) {
+    return {
+      ...pageMeta[PATHS.DASHBOARD],
+      title: `${role} Overview`,
+    };
+  }
+
   if (pageMeta[pathname]) return pageMeta[pathname];
 
   if (/^\/dashboard\/complaints\/[^/]+$/.test(pathname)) {
@@ -209,7 +239,7 @@ function metaForPath(pathname) {
 
   return {
     eyebrow: "Dashboard",
-    title: "Overview",
+    title: `${role} Overview`,
     subtitle: "Manage your environmental reports and account.",
   };
 }
@@ -320,7 +350,8 @@ function DashboardLayout() {
   const role = profile?.role || "Citizen";
 
   const navItems = useMemo(() => navItemsForRole(role), [role]);
-  const meta = metaForPath(location.pathname);
+  const meta = metaForPath(location.pathname, role);
+  const showLayoutTitle = !hasOwnPageHeader(location.pathname);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -388,19 +419,26 @@ function DashboardLayout() {
           </header>
 
           <main className="flex-1 px-4 pb-12 pt-5 sm:px-6 lg:px-0 lg:pb-8 lg:pt-0">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between lg:mb-6">
-              <div className="min-w-0">
-                <span className="inline-flex items-center gap-2 rounded-full border border-forest-900/10 bg-white/70 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700 backdrop-blur">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  {meta.eyebrow}
-                </span>
-                <h1 className="mt-3 font-display text-[1.75rem] font-extrabold leading-[1.05] tracking-[-0.045em] text-forest-950 sm:text-[2.1rem]">
-                  {meta.title}
-                </h1>
-                <p className="mt-1.5 max-w-2xl text-[12px] leading-6 text-slate-500 sm:text-[13px]">
-                  {meta.subtitle}
-                </p>
-              </div>
+            <div
+              className={cn(
+                "mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between lg:mb-6",
+                !showLayoutTitle && "sm:justify-end",
+              )}
+            >
+              {showLayoutTitle && (
+                <div className="min-w-0">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-forest-900/10 bg-white/70 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700 backdrop-blur">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    {meta.eyebrow}
+                  </span>
+                  <h1 className="mt-3 font-display text-[1.75rem] font-extrabold leading-[1.05] tracking-[-0.045em] text-forest-950 sm:text-[2.1rem]">
+                    {meta.title}
+                  </h1>
+                  <p className="mt-1.5 max-w-2xl text-[12px] leading-6 text-slate-500 sm:text-[13px]">
+                    {meta.subtitle}
+                  </p>
+                </div>
+              )}
 
               <div className="hidden shrink-0 items-center gap-2 lg:flex">
                 <NotificationBell />
