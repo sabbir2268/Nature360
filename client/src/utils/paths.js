@@ -19,6 +19,7 @@ export const PATHS = {
   HOTSPOTS: "/dashboard/hotspots",
   ANALYTICS: "/dashboard/analytics",
   ALERTS: "/dashboard/alerts",
+  HOTSPOT_INTELLIGENCE: "/dashboard/hotspot-intelligence",
   NOTIFICATIONS: "/dashboard/notifications",
   SETTINGS: "/dashboard/settings",
 

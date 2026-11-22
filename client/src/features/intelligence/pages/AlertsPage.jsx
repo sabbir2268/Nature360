@@ -32,7 +32,7 @@ const alertStatusStyles = {
   Resolved: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
-function AlertsPage() {
+function AlertsPage({ embedded = false }) {
   const { role } = useAuth();
   const canManage = role === "Officer" || role === "Admin";
   const [alerts, setAlerts] = useState([]);
@@ -97,34 +97,50 @@ function AlertsPage() {
     }
   };
 
+  const headerActions = (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={load}
+        disabled={loading}
+        className="gap-1.5"
+      >
+        <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+        Refresh
+      </Button>
+      {canManage && (
+        <Button type="button" size="sm" onClick={handleScan} disabled={scanning} className="gap-1.5">
+          <Radar className={cn("h-3.5 w-3.5", scanning && "animate-pulse")} />
+          {scanning ? "Scanning..." : "Run hotspot scan"}
+        </Button>
+      )}
+    </>
+  );
+
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="FR-11"
-        title="Hotspot alerts"
-        description="Automatic alerts fire when a category and area cross the configured report threshold, so repeat pollution is not missed."
-        actions={
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={load}
-              disabled={loading}
-              className="gap-1.5"
-            >
-              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-              Refresh
-            </Button>
-            {canManage && (
-              <Button type="button" size="sm" onClick={handleScan} disabled={scanning} className="gap-1.5">
-                <Radar className={cn("h-3.5 w-3.5", scanning && "animate-pulse")} />
-                {scanning ? "Scanning..." : "Run hotspot scan"}
-              </Button>
-            )}
-          </>
-        }
-      />
+      {embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">
+              FR-11
+            </p>
+            <h2 className="mt-1 font-display text-lg font-extrabold tracking-[-0.03em] text-forest-950">
+              Hotspot alerts
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-2">{headerActions}</div>
+        </div>
+      ) : (
+        <PageHeader
+          eyebrow="FR-11"
+          title="Hotspot alerts"
+          description="Automatic alerts fire when a category and area cross the configured report threshold, so repeat pollution is not missed."
+          actions={headerActions}
+        />
+      )}
 
       {flash && (
         <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-[11px] font-semibold text-emerald-800">
@@ -281,15 +297,17 @@ function AlertsPage() {
         </>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-forest-900/[0.07] bg-white/50 px-4 py-3">
-        <p className="text-[10px] font-semibold text-slate-500">
-          Want the geographic picture? Open the hotspot map.
-        </p>
-        <Button to={PATHS.HOTSPOTS} variant="ghost" size="sm" className="gap-1.5">
-          <MapPin className="h-3.5 w-3.5" />
-          Hotspot map
-        </Button>
-      </div>
+      {!embedded && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-forest-900/[0.07] bg-white/50 px-4 py-3">
+          <p className="text-[10px] font-semibold text-slate-500">
+            Want the geographic picture? Open the hotspot map.
+          </p>
+          <Button to={PATHS.HOTSPOTS} variant="ghost" size="sm" className="gap-1.5">
+            <MapPin className="h-3.5 w-3.5" />
+            Hotspot map
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

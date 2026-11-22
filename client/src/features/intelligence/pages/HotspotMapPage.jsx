@@ -41,7 +41,7 @@ const defaultFilters = {
   minReports: "1",
 };
 
-function HotspotMapPage() {
+function HotspotMapPage({ embedded = false }) {
   const { role } = useAuth();
   const [hotspots, setHotspots] = useState([]);
   const [meta, setMeta] = useState({ total: 0, scannedComplaints: 0, alertRules: null });
@@ -116,32 +116,50 @@ function HotspotMapPage() {
     return { ...counts, reports };
   }, [hotspots]);
 
+  const headerActions = (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={load}
+        disabled={loading}
+        className="gap-1.5"
+      >
+        <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+        Refresh
+      </Button>
+      {!embedded && (
+        <Button to={PATHS.ALERTS} size="sm" className="gap-1.5">
+          <AlertCircle className="h-3.5 w-3.5" />
+          Alerts
+        </Button>
+      )}
+    </>
+  );
+
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="FR-12"
-        title="Environmental hotspots"
-        description="Rule-based clustering groups complaints by category and area to expose repeat pollution and high-risk locations."
-        actions={
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={load}
-              disabled={loading}
-              className="gap-1.5"
-            >
-              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-              Refresh
-            </Button>
-            <Button to={PATHS.ALERTS} size="sm" className="gap-1.5">
-              <AlertCircle className="h-3.5 w-3.5" />
-              Alerts
-            </Button>
-          </>
-        }
-      />
+      {embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">
+              FR-12
+            </p>
+            <h2 className="mt-1 font-display text-lg font-extrabold tracking-[-0.03em] text-forest-950">
+              Environmental hotspots
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-2">{headerActions}</div>
+        </div>
+      ) : (
+        <PageHeader
+          eyebrow="FR-12"
+          title="Environmental hotspots"
+          description="Rule-based clustering groups complaints by category and area to expose repeat pollution and high-risk locations."
+          actions={headerActions}
+        />
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[

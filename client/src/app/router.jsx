@@ -21,6 +21,7 @@ import InvestigationWorkspace from "../features/volunteer/pages/InvestigationWor
 import HotspotMapPage from "../features/intelligence/pages/HotspotMapPage";
 import AnalyticsPage from "../features/intelligence/pages/AnalyticsPage";
 import AlertsPage from "../features/intelligence/pages/AlertsPage";
+import HotspotIntelligencePage from "../features/intelligence/pages/HotspotIntelligencePage";
 import NotificationsPage from "../features/notifications/pages/NotificationsPage";
 import SettingsPage from "../features/settings/pages/SettingsPage";
 import AdminUsers from "../features/admin/pages/AdminUsers";
@@ -95,6 +96,7 @@ export const router = createBrowserRouter([
           {
             element: <RoleRoute roles={["Admin"]} />,
             children: [
+              { path: "hotspot-intelligence", element: <HotspotIntelligencePage /> },
               { path: "admin/users", element: <AdminUsers /> },
               { path: "admin/config", element: <AdminConfig /> },
               { path: "admin/audit", element: <AdminAudit /> },

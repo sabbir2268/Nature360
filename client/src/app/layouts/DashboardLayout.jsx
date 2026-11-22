@@ -56,6 +56,20 @@ function navItemsForRole(role) {
       icon: ClipboardList,
     };
 
+    const hotspotItem =
+      role === "Admin"
+        ? [
+            {
+              label: "Hotspot Intelligence",
+              description: "Map & alerts",
+              to: PATHS.HOTSPOT_INTELLIGENCE,
+              icon: MapPinned,
+            },
+          ]
+        : [sharedItems[0]];
+
+    const alertItem = role === "Admin" ? [] : [sharedItems[2]];
+
     const adminItems =
       role === "Admin"
         ? [
@@ -70,7 +84,16 @@ function navItemsForRole(role) {
           ]
         : [];
 
-    return [overview, queue, ...sharedItems.slice(0, 4), ...adminItems, sharedItems[4]];
+    return [
+      overview,
+      queue,
+      ...hotspotItem,
+      sharedItems[1],
+      ...alertItem,
+      sharedItems[3],
+      ...adminItems,
+      sharedItems[4],
+    ];
   }
 
   if (role === "Volunteer") {
@@ -112,6 +135,7 @@ const PAGES_WITH_OWN_HEADER = new Set([
   PATHS.HOTSPOTS,
   PATHS.ANALYTICS,
   PATHS.ALERTS,
+  PATHS.HOTSPOT_INTELLIGENCE,
   PATHS.NOTIFICATIONS,
   PATHS.SETTINGS,
   PATHS.ADMIN_USERS,
@@ -167,6 +191,11 @@ const pageMeta = {
     eyebrow: "Environmental intelligence",
     title: "Hotspot alerts",
     subtitle: "Automatic threshold alerts, acknowledgement and resolution.",
+  },
+  [PATHS.HOTSPOT_INTELLIGENCE]: {
+    eyebrow: "Environmental intelligence",
+    title: "Hotspot intelligence",
+    subtitle: "Complaint clusters on the map and automatic threshold alerts in one place.",
   },
   [PATHS.NOTIFICATIONS]: {
     eyebrow: "Account",
