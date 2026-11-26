@@ -18,13 +18,51 @@ import { app, auth } from "../../../config/firebase";
 import { apiRequest } from "../../../lib/api";
 
 const REGISTRATION_APP_NAME = "nature360-registration";
+const PENDING_ROLE_KEY = "nature360:pendingRole";
+
+export function queueVolunteerRole(email = "") {
+  try {
+    window.localStorage.setItem(PENDING_ROLE_KEY, String(email).trim().toLowerCase());
+  } catch {
+    return null;
+  }
+  return true;
+}
+
+export function clearPendingRole() {
+  try {
+    window.localStorage.removeItem(PENDING_ROLE_KEY);
+  } catch {
+    return null;
+  }
+  return true;
+}
+
+export async function claimPendingRole(authUser = auth.currentUser) {
+  let expectedEmail = null;
+  try {
+    expectedEmail = window.localStorage.getItem(PENDING_ROLE_KEY);
+  } catch {
+    return null;
+  }
+
+  if (expectedEmail === null || !authUser) return null;
+
+  const normalizedEmail = expectedEmail.trim().toLowerCase();
+  const currentEmail = String(authUser.email || "").trim().toLowerCase();
+  if (normalizedEmail && normalizedEmail !== currentEmail) return null;
+
+  const data = await apiRequest("/users/volunteer", { method: "POST" });
+  clearPendingRole();
+  return data.user;
+}
 
 /**
  * Creates the Firebase Auth account on a temporary secondary app so the
  * primary session stays signed out, then sends the verification email.
  * The MongoDB user profile is created by the API on the first sign-in.
  */
-export async function registerUser({ name, email, password }) {
+export async function registerUser({ name, email, password, role = "Citizen" }) {
   const secondaryApp = initializeApp(app.options, REGISTRATION_APP_NAME);
   const secondaryAuth = getAuth(secondaryApp);
 
@@ -46,6 +84,9 @@ export async function registerUser({ name, email, password }) {
     }
 
     await signOut(secondaryAuth);
+
+    if (role === "Volunteer") queueVolunteerRole(credential.user.email);
+    else clearPendingRole();
 
     return {
       uid: credential.user.uid,

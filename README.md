@@ -15,7 +15,7 @@ drive risk scoring and automatic hotspot alerts.
 | --- | --- |
 | Citizen | Register/sign in, submit complaints with photos/videos/PDF, GPS pin, edit or soft-delete before investigation, track status history, confirm resolution or reopen with feedback |
 | Officer | Filter and search the complaint queue, verify/reject, adjust category/severity/priority, check duplicates, assign volunteers with deadlines, add internal notes, record corrective actions, update status, export admin PDF |
-| Volunteer | See assigned cases and deadlines, record on-site observations, GPS and evidence, submit an investigation report |
+| Volunteer | Self-register at sign-up, see assigned cases and deadlines, record on-site observations, GPS and evidence, submit an investigation report |
 | Admin | Everything officers can do, plus user roles/status, categories, severity weights, risk rules, alert rules and the audit trail |
 | Shared | Hotspot map, analytics, automatic hotspot alerts, notifications, profile/security settings |
 
@@ -52,6 +52,12 @@ VOLUNTEER_EMAILS=volunteer@example.com
 Role lists are optional. New sign-ins with those emails receive the role, and
 existing accounts are promoted on their next sign-in. Admins can also change
 roles from **Dashboard -> User Management**.
+
+Accounts created with the sign-up form default to **Citizen**. Select
+**Field volunteer** on the form to register as a **Volunteer** without a
+hardcoded email; officers and admins can then assign complaints to that account
+from the complaint workspace. `VOLUNTEER_EMAILS` remains available for
+bootstrapping volunteer accounts.
 
 Create `client/.env` from `client/.env.example` with your Firebase web config:
 
@@ -121,7 +127,7 @@ All routes except `/api/health` require a Firebase ID token.
 
 | Area | Routes |
 | --- | --- |
-| Profile | `GET/PATCH /api/users/me`, `GET /api/users/volunteers` |
+| Profile | `GET/PATCH /api/users/me`, `POST /api/users/volunteer`, `GET /api/users/volunteers` |
 | Complaints | `GET/POST /api/posts`, `GET/PATCH/DELETE /api/posts/:id`, `PATCH /api/posts/:id/status`, `POST /api/posts/:id/responses` |
 | Officer workflow | `POST /api/posts/:id/verify`, `GET /api/posts/:id/duplicates`, `POST /api/posts/:id/assign`, `POST /api/posts/:id/notes`, `POST /api/posts/:id/corrective-actions` |
 | Volunteer workflow | `GET /api/posts/assigned`, `PATCH /api/posts/:id/investigation`, `POST /api/posts/:id/investigation/report` |
