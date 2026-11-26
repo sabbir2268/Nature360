@@ -62,6 +62,28 @@ router.patch(
   }),
 );
 
+router.post(
+  "/volunteer",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    if (req.user.role !== "Citizen") {
+      return res.json({ user: serializeUser(req.user) });
+    }
+
+    req.user.role = "Volunteer";
+    await req.user.save();
+
+    await writeAudit(req, {
+      action: "user.volunteer_register",
+      entityType: "User",
+      entityId: req.user._id,
+      details: { email: req.user.email },
+    });
+
+    res.json({ user: serializeUser(req.user) });
+  }),
+);
+
 /** Volunteers available for assignment. */
 router.get(
   "/volunteers",

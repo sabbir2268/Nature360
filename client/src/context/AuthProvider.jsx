@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { AuthContext } from "./authContext.jsx";
 import { auth } from "../config/firebase";
-import { getMyProfile } from "../features/auth/services/authServices";
+import { claimPendingRole, getMyProfile } from "../features/auth/services/authServices";
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -28,6 +28,12 @@ const AuthProvider = ({ children }) => {
     };
 
     try {
+      try {
+        await claimPendingRole(authUser);
+      } catch (claimError) {
+        console.warn("Volunteer role claim failed:", claimError);
+      }
+
       const stored = await getMyProfile();
       const merged = {
         ...fallback,

@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertCircle, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-react";
+import { AlertCircle, ArrowRight, ClipboardCheck, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import GoogleIcon from "../../../components/ui/GoogleIcon";
 import TextField from "../../../components/ui/TextField";
 import { PATHS } from "../../../utils/paths";
-import { getAuthErrorMessage, loginWithGoogle, registerUser } from "../services/authServices";
+import {
+  clearPendingRole,
+  getAuthErrorMessage,
+  loginWithGoogle,
+  queueVolunteerRole,
+  registerUser,
+} from "../services/authServices";
 
 function Register() {
   const navigate = useNavigate();
@@ -15,6 +21,7 @@ function Register() {
     password: "",
     confirmPassword: "",
   });
+  const [accountType, setAccountType] = useState("Citizen");
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
@@ -41,12 +48,16 @@ function Register() {
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        role: accountType,
       });
 
       navigate(PATHS.LOGIN, {
         replace: true,
         state: {
-          message: "Account created successfully. Please sign in with your new credentials.",
+          message:
+            accountType === "Volunteer"
+              ? "Volunteer account created. Sign in and an officer can assign cases to you."
+              : "Account created successfully. Please sign in with your new credentials.",
         },
       });
     } catch (authError) {
@@ -66,9 +77,13 @@ function Register() {
     setGoogleLoading(true);
 
     try {
+      if (accountType === "Volunteer") queueVolunteerRole();
+      else clearPendingRole();
+
       await loginWithGoogle();
       // PublicRoute sends authenticated users to their profile.
     } catch (googleError) {
+      clearPendingRole();
       const message = getAuthErrorMessage(googleError);
       if (message) setError(message);
       setGoogleLoading(false);
@@ -108,7 +123,55 @@ function Register() {
         <span className="h-px flex-1 bg-forest-900/10" />
       </div>
 
-      <form className="space-y-3.5" onSubmit={handleSubmit}>
+      <fieldset className="mt-5">
+        <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+          Register as
+        </legend>
+        <div className="mt-2 grid gap-2.5 sm:grid-cols-2">
+          {[
+            {
+              value: "Citizen",
+              label: "Community member",
+              description: "Report and track complaints",
+              icon: User,
+            },
+            {
+              value: "Volunteer",
+              label: "Field volunteer",
+              description: "Investigate cases assigned by officers",
+              icon: ClipboardCheck,
+            },
+          ].map((option) => {
+            const Icon = option.icon;
+            const selected = accountType === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setAccountType(option.value)}
+                aria-pressed={selected}
+                className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-colors ${
+                  selected
+                    ? "border-emerald-500 bg-emerald-50/80 ring-1 ring-emerald-500/30"
+                    : "border-forest-900/10 bg-white/60 hover:border-emerald-300 hover:bg-emerald-50/40"
+                }`}
+              >
+                <Icon
+                  className={`mt-0.5 h-4 w-4 shrink-0 ${selected ? "text-emerald-600" : "text-slate-400"}`}
+                />
+                <span>
+                  <span className="block text-[12px] font-bold text-forest-950">{option.label}</span>
+                  <span className="mt-0.5 block text-[10px] leading-4 text-slate-500">
+                    {option.description}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <form className="mt-4 space-y-3.5" onSubmit={handleSubmit}>
         <TextField
           id="register-name"
           label="Full name"
