@@ -5,6 +5,8 @@
   "description": "Nature360 / EcoTrack — environmental complaint tracking (React + Express + MongoDB)",
   "scripts": {
     "install:all": "npm --prefix server install && npm --prefix client install",
+    "dev": "node scripts/dev.mjs",
+    "dev:all": "node scripts/dev.mjs",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "build": "npm --prefix client run build",

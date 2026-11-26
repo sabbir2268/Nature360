@@ -95,7 +95,17 @@ not configured; inline evidence is limited to 2 MB per file.
 
 ## Run both apps
 
-Use two terminals:
+The dashboards read their data from the API. If only the web app is running,
+every dashboard shows empty metrics and errors. Start both apps with one command:
+
+```bash
+npm run dev
+```
+
+On Windows PowerShell, if `npm.ps1` is blocked by the execution policy, run
+`npm.cmd run dev` instead.
+
+Alternatively, use two terminals:
 
 ```bash
 # Terminal 1 - API on http://localhost:5000
@@ -106,6 +116,11 @@ npm run dev:client
 ```
 
 Health check: <http://localhost:5000/api/health>
+
+If dashboards are empty, open the health check first. It must return
+`"db": "connected"`; otherwise the API is down or connected to an empty
+database. In that case check `MONGODB_URI` / `MONGODB_DB` in `server/.env`
+(the embedded fallback starts with an empty database).
 
 If port 5000 is busy:
 
