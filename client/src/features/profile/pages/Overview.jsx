@@ -140,7 +140,7 @@ function Overview() {
     if (role === "Volunteer") {
       return [
         { to: PATHS.ASSIGNED, label: "Open assigned cases", icon: FileSearch },
-        { to: PATHS.HOTSPOTS, label: "View hotspot map", icon: MapPinned },
+        { to: PATHS.HOTSPOT_INTELLIGENCE, label: "Open hotspot intelligence", icon: MapPinned },
         { to: PATHS.NOTIFICATIONS, label: "Check notifications", icon: AlertTriangle },
       ];
     }

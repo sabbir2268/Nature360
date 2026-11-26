@@ -69,6 +69,7 @@ export const router = createBrowserRouter([
           {
             element: <RoleRoute roles={["Officer", "Volunteer", "Admin"]} />,
             children: [
+              { path: "hotspot-intelligence", element: <HotspotIntelligencePage /> },
               { path: "hotspots", element: <HotspotMapPage /> },
               { path: "analytics", element: <AnalyticsPage /> },
               { path: "alerts", element: <AlertsPage /> },
@@ -80,7 +81,6 @@ export const router = createBrowserRouter([
           {
             element: <RoleRoute roles={["Officer", "Admin"]} />,
             children: [
-              { path: "hotspot-intelligence", element: <HotspotIntelligencePage /> },
               { path: "complaints", element: <ComplaintQueue /> },
               { path: "complaints/:postId", element: <ComplaintWorkspace /> },
             ],

@@ -39,6 +39,14 @@ const sharedItems = [
   { label: "Settings", description: "Profile & account", to: PATHS.SETTINGS, icon: Settings },
 ];
 
+// Map and alerts are combined into one workspace for staff and volunteers.
+const hotspotIntelligenceItem = {
+  label: "Hotspot Intelligence",
+  description: "Map & alerts",
+  to: PATHS.HOTSPOT_INTELLIGENCE,
+  icon: MapPinned,
+};
+
 function navItemsForRole(role) {
   const overview = {
     label: "Overview",
@@ -54,13 +62,6 @@ function navItemsForRole(role) {
       description: "Review & dispatch",
       to: PATHS.OFFICER_QUEUE,
       icon: ClipboardList,
-    };
-
-    const hotspotItem = {
-      label: "Hotspot Intelligence",
-      description: "Map & alerts",
-      to: PATHS.HOTSPOT_INTELLIGENCE,
-      icon: MapPinned,
     };
 
     const adminItems =
@@ -80,7 +81,7 @@ function navItemsForRole(role) {
     return [
       overview,
       queue,
-      hotspotItem,
+      hotspotIntelligenceItem,
       sharedItems[1],
       sharedItems[3],
       ...adminItems,
@@ -97,7 +98,10 @@ function navItemsForRole(role) {
         to: PATHS.ASSIGNED,
         icon: FileSearch,
       },
-      ...sharedItems,
+      hotspotIntelligenceItem,
+      sharedItems[1],
+      sharedItems[3],
+      sharedItems[4],
     ];
   }
 
