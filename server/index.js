@@ -22,11 +22,23 @@ const CORS_ORIGIN = (process.env.CORS_ORIGIN || "*")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
+
+// Vite can move to the next free port (5174, 5175, ...) and browsers treat
+// localhost and 127.0.0.1 as different origins. Accept any local origin in
+// development so the dashboards can always reach the API.
+function corsOrigin(origin, callback) {
+  const isLocalOrigin = IS_DEVELOPMENT && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin || "");
+  if (!origin || CORS_ORIGIN.includes("*") || CORS_ORIGIN.includes(origin) || isLocalOrigin) {
+    return callback(null, true);
+  }
+  return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+}
 
 const app = express();
 
 app.disable("x-powered-by");
-app.use(cors({ origin: CORS_ORIGIN.includes("*") ? true : CORS_ORIGIN }));
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: "25mb" }));
 
 app.get("/api/health", (req, res) => {
