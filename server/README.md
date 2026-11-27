@@ -1,6 +1,6 @@
 # Nature360 API
 
-Express + MongoDB backend for Nature360 / EcoTrack. Sign-in is handled by Firebase
+Express + MongoDB backend for Nature360. Sign-in is handled by Firebase
 Auth; every request carries a Firebase ID token, and MongoDB is the source of
 truth for profiles, roles, complaints, alerts, notifications, and settings.
 See the [project README](../README.md) and [DEPLOYMENT.md](../DEPLOYMENT.md).

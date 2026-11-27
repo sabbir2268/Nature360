@@ -76,7 +76,7 @@ function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-[10px] font-medium text-white/35 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 EcoTrack. Environmental Monitoring &amp; Response Platform.</p>
+          <p>© 2026 Nature360. Environmental Monitoring &amp; Response Platform.</p>
           <p className="sm:text-right">
             Demo landing experience · Statistics shown are illustrative
           </p>

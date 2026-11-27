@@ -66,7 +66,7 @@ function AuthLayout() {
 
             <div className="relative mt-10 flex items-center gap-2 text-[9px] font-medium text-white/30">
               <Leaf className="h-3 w-3" />
-              EcoTrack · Environmental Monitoring &amp; Response
+              Nature360 · Environmental Monitoring &amp; Response
             </div>
           </div>
 

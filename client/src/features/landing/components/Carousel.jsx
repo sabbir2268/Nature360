@@ -78,7 +78,7 @@ function Carousel() {
               A closer look at how <span className="text-gradient">change happens.</span>
             </>
           }
-          description="From a citizen's first observation to a verified resolution, EcoTrack keeps every step visible."
+          description="From a citizen's first observation to a verified resolution, Nature360 keeps every step visible."
           className="mb-10 sm:mb-12"
         />
 
@@ -100,7 +100,7 @@ function Carousel() {
           }}
           role="region"
           aria-roledescription="carousel"
-          aria-label="EcoTrack platform preview"
+          aria-label="Nature360 platform preview"
           tabIndex={0}
         >
           <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-lime-300/20 blur-3xl" />

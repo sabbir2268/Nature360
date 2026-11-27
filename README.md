@@ -1,4 +1,4 @@
-# Nature360 / EcoTrack
+# Nature360
 
 Citizen-powered environmental complaint tracking and response. Citizens report
 environmental problems with evidence and a GPS pin, officers verify and prioritise
@@ -6,6 +6,9 @@ them, volunteers investigate on site, and administrators configure the rules tha
 drive risk scoring and automatic hotspot alerts.
 
 **Live app:** <https://nature360.vercel.app>
+
+> The API is on Render's free tier, so after a period of inactivity it can take
+> ~50 seconds to wake up. The first request after a sleep may be slow.
 
 ## Stack
 
@@ -25,6 +28,53 @@ drive risk scoring and automatic hotspot alerts.
 
 The platform implements FR-01 through FR-16. Complaints are soft-deleted only, and
 internal notes are never exposed to citizens or volunteers.
+
+## Functional requirements (FR-01–FR-16)
+
+FR-01 to FR-16 are the functional-requirement IDs from the project brief: the code
+labels FR-04 (resolution feedback), FR-06–FR-10 (officer verification, assignment,
+investigation, corrective action and status), FR-11–FR-13 (alerts, hotspot map and
+analytics) and FR-14–FR-16 (admin config, users and audit), while FR-01–FR-03 and
+FR-05 are not labelled in the current UI (TODO: confirm the exact wording of every
+requirement against the brief).
+
+## Screenshots
+
+TODO: capture the images below and add them to `docs/screenshots/` (the folder is
+not in the repository yet).
+
+| View | Placeholder file |
+| --- | --- |
+| Citizen submit form | `docs/screenshots/citizen-submit-form.png` |
+| Officer queue | `docs/screenshots/officer-queue.png` |
+| Volunteer investigation | `docs/screenshots/volunteer-investigation.png` |
+| Admin settings | `docs/screenshots/admin-settings.png` |
+| Hotspot map | `docs/screenshots/hotspot-map.png` |
+| Analytics | `docs/screenshots/analytics.png` |
+
+## Demo accounts
+
+TODO: create and confirm the demo logins and passwords. The four roles come from
+`server/models/User.js`; roles can be bootstrapped with `ADMIN_EMAILS`,
+`OFFICER_EMAILS` and `VOLUNTEER_EMAILS` in `server/.env`.
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Citizen | TODO | TODO |
+| Officer | TODO | TODO |
+| Volunteer | TODO | TODO |
+| Admin | TODO | TODO |
+
+## Team and contributions
+
+TODO: fill in both names and your individual tasks. `git log` attributes every
+commit in this repository to `Md Sabbir Rahman <mdsabbirrahman2268@gmail.com>`, so
+the folder suggestions below are only a starting point, not a confirmed split.
+
+| Member | Name | Tasks | Suggested folders from git log |
+| --- | --- | --- | --- |
+| You | TODO | TODO | Most feature work under `client/src/features/`, plus `server/models/` and `server/routes/` (TODO: confirm) |
+| Teammate | TODO | TODO | The `setu656` branch / PR #1 touched `README.md`, `package.json`, `scripts/dev.mjs`, `server/.env.example` and `server/index.js` (TODO: confirm) |
 
 ## Project structure
 
@@ -87,6 +137,58 @@ All routes except `/api/health` require a Firebase ID token in the
 
 Statuses: `Submitted → Under Review → Verified → Investigation → Action Taken → Resolved` (plus `Rejected`).
 
+## How risk scoring and hotspot alerts work
+
+The scoring code is in `server/services/riskService.js`, the alert check in
+`server/services/alertService.js`, and the configurable defaults in
+`server/services/settingsService.js` (an admin can change them in Admin Config).
+
+For a complaint, four parts are each reduced to a number from 0 to 100:
+
+- **Frequency** — reports with the same category and area inside `frequencyWindowDays`
+  (default 30), divided by that window and capped at 100.
+- **Severity** — the average severity weight of those recent reports divided by the
+  highest configured severity weight, capped at 100 (default weights: Low 1,
+  Medium 2, High 3, Critical 4).
+- **Recurrence** — `max(0, recurrenceCount − 1)` divided by `frequencyWindowDays × 1.5`,
+  capped at 100; `recurrenceCount` counts reports inside `recurrenceWindowDays`
+  (default 90).
+- **Recency** — 100 if the newest report is at most 1 day old, then 80 up to 3 days,
+  60 up to 7, 40 up to 14, 20 up to 30, 10 up to 90, and 0 beyond that.
+
+The parts are combined as a weighted average with the default weights frequency 30,
+severity 25, recurrence 25 and recency 20, then rounded to a score from 0 to 100.
+The level is Low up to 39, Moderate up to 59, High up to 79, and Critical above
+that; all weights and cut-offs are configurable.
+
+A **hotspot** groups complaints by category plus `area`, falling back to `location`
+and then to coordinates rounded to three decimals, and runs the same score with the
+group's report count used for both frequency and recurrence. Results can be filtered
+by risk level and minimum reports, and are sorted by score, then report count. When
+scoring a single complaint, "same area" means a matching `area`/`location` or a
+coordinate box of ±0.01 degrees.
+
+An **alert** is checked after a complaint is created or verified. If alerts are
+active, the complaint has an area, and its category and area have at least
+`reportThreshold` reports (default 10) within `windowDays` (default 7), one Active
+alert is created or updated per category and area per window. It uses the same score
+with `windowDays` as the frequency window; a Low level is raised to Moderate, and
+notifications go to `notifyRoles` (default Officer and Admin).
+
+## Data model
+
+MongoDB collections come from the Mongoose models in `server/models/` (collection
+names use Mongoose's default pluralisation):
+
+| Model / collection | Key fields |
+| --- | --- |
+| `User` / `users` | `uid` (unique), `name`, `email`, `role`, `status`, `phone`, `emailVerified`, `lastLoginAt` |
+| `Post` / `posts` | `user`, `title`, `category`, `severity`, `priority`, `location`, `area`, `coordinates`, `description`, `incidentAt`, `evidence`, `status`, `statusHistory`, `verificationStatus`, `assignedTo`, `deadline`, `internalNotes`, `correctiveActions`, `investigation`, `duplicateOf`, `riskScore`, `riskLevel`, `resolutionStatus`, `citizenResponses`, `isDeleted` |
+| `Alert` / `alerts` | `category`, `area`, `coordinates`, `reportCount`, `windowDays`, `riskScore`, `riskLevel`, `message`, `status`, `acknowledgedAt`, `resolvedAt` |
+| `Setting` / `settings` | `key` (unique, `global`), `categories`, `severityLevels`, `riskRules`, `alertRules` |
+| `Notification` / `notifications` | `user`, `type`, `title`, `message`, `link`, `relatedPost`, `read`, `readAt` |
+| `AuditLog` / `auditlogs` | `actorUid`, `actorName`, `actorRole`, `action`, `entityType`, `entityId`, `details`, `ip` |
+
 ## Deployment
 
 The web app is deployed on Vercel and the API on Render, with MongoDB Atlas and
@@ -105,3 +207,9 @@ Verify a deployment with:
 curl https://nature360.onrender.com/api/health
 # {"ok":true,"service":"nature360-api","db":"connected","time":"..."}
 ```
+
+## Testing
+
+TODO: there is no automated test suite in this repository (no test/spec files and
+no `test` script in the root, client or server `package.json`). Add tests and record
+the commands here once they exist.

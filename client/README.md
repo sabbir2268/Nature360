@@ -1,6 +1,6 @@
 # Nature360 client
 
-The React 19 single-page app for Nature360 / EcoTrack, built with Vite, Tailwind
+The React 19 single-page app for Nature360, built with Vite, Tailwind
 CSS v4, Firebase Auth/Storage, Leaflet, and Recharts. See the
 [project README](../README.md) for the big picture and [DEPLOYMENT.md](../DEPLOYMENT.md)
 for production setup.

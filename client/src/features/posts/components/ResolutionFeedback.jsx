@@ -394,7 +394,7 @@ function ResolutionFeedback({ post, onUpdated }) {
                     </a>
                   )}
                   <p className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                    {entry.respondedBy?.role || "Citizen"} · {entry.respondedBy?.name || "EcoTrack"}
+                    {entry.respondedBy?.role || "Citizen"} · {entry.respondedBy?.name || "Nature360"}
                   </p>
                 </li>
               ))}

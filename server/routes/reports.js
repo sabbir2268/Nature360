@@ -64,7 +64,7 @@ router.get(
       }
     });
 
-    doc.fillColor("#052e24").font("Helvetica-Bold").fontSize(24).text("Nature360 / EcoTrack");
+    doc.fillColor("#052e24").font("Helvetica-Bold").fontSize(24).text("Nature360");
     doc
       .fillColor("#10b981")
       .font("Helvetica-Bold")

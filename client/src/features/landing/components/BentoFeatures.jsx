@@ -285,7 +285,7 @@ function BentoFeatures() {
                         <Icon className="h-5 w-5" />
                       </span>
                       <span className="rounded-full border border-white/70 bg-white/55 px-2 py-1 text-[8px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                        EcoTrack
+                        Nature360
                       </span>
                     </div>
                     <h3 className="mt-5 font-display text-[16px] font-bold leading-snug tracking-[-0.025em] text-forest-950">

@@ -1,6 +1,6 @@
 {
-  "name": "EcoTrack — Environmental Monitoring & Response",
-  "short_name": "EcoTrack",
+  "name": "Nature360 — Environmental Monitoring & Response",
+  "short_name": "Nature360",
   "description": "Citizen-powered environmental monitoring and response platform.",
   "start_url": "/",
   "display": "standalone",

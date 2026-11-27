@@ -8,7 +8,7 @@ function Logo({ to = "/", tone = "light", className = "", showWordmark = true, w
   return (
     <Link
       to={to}
-      aria-label="EcoTrack home"
+      aria-label="Nature360 home"
       className={cn("group inline-flex items-center gap-2.5 rounded-xl", className)}
     >
       <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-forest-900 via-emerald-600 to-lime-400 shadow-lg shadow-emerald-900/20 ring-1 ring-inset ring-white/30 transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105">
@@ -23,7 +23,7 @@ function Logo({ to = "/", tone = "light", className = "", showWordmark = true, w
             wordmarkClassName,
           )}
         >
-          Eco<span className={isDark ? "text-lime-300" : "text-emerald-600"}>Track</span>
+          Nature<span className={isDark ? "text-lime-300" : "text-emerald-600"}>360</span>
         </span>
       )}
     </Link>

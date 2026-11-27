@@ -14,13 +14,13 @@ function AboutSection() {
           <div>
             <SectionHeading
               align="left"
-              eyebrow="About EcoTrack"
+              eyebrow="About Nature360"
               title={
                 <>
                   Built for the people who <span className="text-gradient">notice.</span>
                 </>
               }
-              description="EcoTrack is a citizen-powered environmental monitoring and response platform. It connects the people who see a problem with the volunteers who investigate it and the officers who can act on it."
+              description="Nature360 is a citizen-powered environmental monitoring and response platform. It connects the people who see a problem with the volunteers who investigate it and the officers who can act on it."
             />
 
             <div className="mt-8 space-y-3">

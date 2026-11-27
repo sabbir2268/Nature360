@@ -421,7 +421,7 @@ function PostDetails() {
                           )}
                           <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
                             {entry.changedBy?.role || "Citizen"} ·{" "}
-                            {entry.changedBy?.name || "EcoTrack"}
+                            {entry.changedBy?.name || "Nature360"}
                           </p>
                         </div>
                       </li>

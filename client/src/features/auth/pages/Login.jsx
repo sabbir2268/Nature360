@@ -81,7 +81,7 @@ function Login() {
         Welcome back
       </span>
       <h1 className="mt-4 font-display text-[1.9rem] font-extrabold leading-[1.08] tracking-[-0.045em] text-forest-950 sm:text-4xl">
-        Sign in to EcoTrack
+        Sign in to Nature360
       </h1>
       <p className="mt-2.5 text-[13px] leading-6 text-slate-500">
         Access your reports, follow complaint updates, and stay connected to environmental action in
@@ -192,7 +192,7 @@ function Login() {
       )}
 
       <p className="mt-6 text-center text-[12px] text-slate-500">
-        New to EcoTrack?{" "}
+        New to Nature360?{" "}
         <Link to={PATHS.REGISTER} className="font-bold text-emerald-700 hover:text-forest-900 hover:underline">
           Create an account
         </Link>

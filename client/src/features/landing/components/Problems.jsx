@@ -18,7 +18,7 @@ function Problems() {
               What Are We <span className="text-gradient">Fighting Against?</span>
             </>
           }
-          description="Environmental problems are often local, repeated, and easy to miss. EcoTrack gives each issue a clear place to be seen and followed."
+          description="Environmental problems are often local, repeated, and easy to miss. Nature360 gives each issue a clear place to be seen and followed."
         />
 
         <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
