@@ -1,6 +1,16 @@
 import { auth } from "../config/firebase";
 
-const RAW_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const PRODUCTION_API = "https://nature360.onrender.com/api";
+const DEVELOPMENT_API = "http://localhost:5000/api";
+
+function resolveBaseUrl() {
+  const configured = (import.meta.env.VITE_API_URL || "").trim();
+  const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(configured);
+  if (configured && !(import.meta.env.PROD && isLocal)) return configured;
+  return import.meta.env.PROD ? PRODUCTION_API : DEVELOPMENT_API;
+}
+
+const RAW_BASE = resolveBaseUrl();
 
 /** Base URL of the Nature360 API, e.g. http://localhost:5000/api */
 export const API_BASE_URL = RAW_BASE.replace(/\/+$/, "");

@@ -1,16 +1,3 @@
-export function formatDate(value, fallback = "—") {
-  if (!value) return fallback;
-
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return fallback;
-
-  return date.toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export function formatDateTime(value, fallback = "—") {
   if (!value) return fallback;
 

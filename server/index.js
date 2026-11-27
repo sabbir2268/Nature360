@@ -21,7 +21,7 @@ import userRoutes from "./routes/users.js";
 const PORT = Number(process.env.PORT || 5000);
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || "*")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
   .filter(Boolean);
 const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
 
@@ -29,11 +29,16 @@ const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
 // localhost and 127.0.0.1 as different origins. Accept any local origin in
 // development so the dashboards can always reach the API.
 function corsOrigin(origin, callback) {
-  const isLocalOrigin = IS_DEVELOPMENT && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin || "");
-  if (!origin || CORS_ORIGIN.includes("*") || CORS_ORIGIN.includes(origin) || isLocalOrigin) {
+  if (!origin) return callback(null, true);
+
+  const normalized = origin.trim().replace(/\/+$/, "");
+  const isLocalOrigin =
+    IS_DEVELOPMENT && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalized);
+
+  if (CORS_ORIGIN.includes("*") || CORS_ORIGIN.includes(normalized) || isLocalOrigin) {
     return callback(null, true);
   }
-  return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+  return callback(null, false);
 }
 
 const app = express();

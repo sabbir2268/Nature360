@@ -1,5 +1,3 @@
-import mongoose from "mongoose";
-
 export function asyncHandler(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 }
@@ -40,27 +38,11 @@ export function normalizeCoordinates(input) {
   return { lat, lng };
 }
 
-export function isValidObjectId(value) {
-  return mongoose.isValidObjectId(value);
-}
-
 export function actorFromUser(user) {
   return {
     uid: user.uid,
     name: user.name,
     role: user.role,
-  };
-}
-
-export function publicEvidence(evidence) {
-  if (!evidence) return null;
-  return {
-    name: evidence.name,
-    mimeType: evidence.mimeType,
-    size: evidence.size,
-    url: evidence.url || evidence.data || "",
-    path: evidence.path || "",
-    uploadedAt: evidence.uploadedAt,
   };
 }
 
