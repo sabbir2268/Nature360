@@ -8,8 +8,9 @@ Browser -> Vercel (React SPA) -> Render (Express API) -> MongoDB Atlas
                     +---- Firebase Auth / Storage
 ```
 
-Both apps are in one repo. `vercel.json` and `render.yaml` at the repo root hold the
-build settings, so no manual build commands are needed.
+Both apps are in one repo. `render.yaml` holds the API build settings. `vercel.json`
+only adds SPA rewrites and asset cache headers — leave the Vercel build settings at
+the values detected for the project.
 
 ---
 
@@ -195,11 +196,10 @@ Use `render deploys create ... --wait` after changing `CORS_ORIGIN` in step 5.
 
 1. Push the repo to GitHub/GitLab.
 2. Vercel -> **Add New -> Project**, import the repository.
-3. Keep these detected from `vercel.json` (do not change Root Directory):
-   - **Framework Preset**: Vite
-   - **Install Command**: `npm --prefix client ci`
-   - **Build Command**: `npm --prefix client run build`
-   - **Output Directory**: `client/dist`
+3. Do not change the Root Directory or the detected build settings. `vercel.json`
+   deliberately does **not** override `installCommand`, `buildCommand`, or
+   `outputDirectory`: those commands run relative to the configured Root Directory,
+   so hard-coding `client/` paths there makes the deployment fail.
 4. Add environment variables **before** deploying:
 
 | Key | Value |

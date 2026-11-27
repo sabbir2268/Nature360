@@ -90,8 +90,9 @@ Statuses: `Submitted → Under Review → Verified → Investigation → Action 
 ## Deployment
 
 The web app is deployed on Vercel and the API on Render, with MongoDB Atlas and
-Firebase. `vercel.json` and `render.yaml` hold the build settings. See
-[DEPLOYMENT.md](./DEPLOYMENT.md) for the complete guide and troubleshooting.
+Firebase. `render.yaml` holds the API build settings; `vercel.json` only holds SPA
+rewrites and asset cache headers. See [DEPLOYMENT.md](./DEPLOYMENT.md) for the
+complete guide and troubleshooting.
 
 Two details that matter for a working deployment:
 
