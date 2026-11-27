@@ -5,7 +5,7 @@ environmental problems with evidence and a GPS pin, officers verify and prioriti
 them, volunteers investigate on site, and administrators configure the rules that
 drive risk scoring and automatic hotspot alerts.
 
-**Live app:** <https://nature360.vercel.app> · **Live API:** <https://nature360.onrender.com/api>
+**Live app:** <https://nature360.vercel.app>
 
 ## Stack
 
