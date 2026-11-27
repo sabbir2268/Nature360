@@ -20,7 +20,24 @@ function bootstrappedRole(email) {
   return null;
 }
 
+const verifiedTokens = new Map();
+const MAX_VERIFIED_TOKENS = 5000;
+const MAX_TOKEN_CACHE_MS = 55 * 60 * 1000;
+
+function tokenExpiry(idToken) {
+  try {
+    const payload = JSON.parse(Buffer.from(idToken.split(".")[1], "base64url").toString("utf8"));
+    return typeof payload.exp === "number" ? payload.exp * 1000 : 0;
+  } catch {
+    return 0;
+  }
+}
+
 async function verifyFirebaseToken(idToken) {
+  const now = Date.now();
+  const cached = verifiedTokens.get(idToken);
+  if (cached && cached.expiresAt > now) return cached.account;
+
   const apiKey = getFirebaseApiKey();
 
   const response = await fetch(
@@ -36,15 +53,32 @@ async function verifyFirebaseToken(idToken) {
   if (!response.ok) return null;
 
   const data = await response.json();
-  const account = data?.users?.[0];
-  if (!account?.localId) return null;
+  const firebaseUser = data?.users?.[0];
+  if (!firebaseUser?.localId) return null;
 
-  return {
-    uid: account.localId,
-    email: account.email || "",
-    name: account.displayName || account.email?.split("@")[0] || "Nature360 member",
-    emailVerified: Boolean(account.emailVerified),
+  const account = {
+    uid: firebaseUser.localId,
+    email: firebaseUser.email || "",
+    name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Nature360 member",
+    emailVerified: Boolean(firebaseUser.emailVerified),
   };
+
+  const exp = tokenExpiry(idToken);
+  const expiresAt = exp > now
+    ? Math.min(exp - 30000, now + MAX_TOKEN_CACHE_MS)
+    : now + MAX_TOKEN_CACHE_MS;
+
+  if (verifiedTokens.size >= MAX_VERIFIED_TOKENS) {
+    for (const [token, entry] of verifiedTokens) {
+      if (entry.expiresAt <= now) verifiedTokens.delete(token);
+    }
+    while (verifiedTokens.size >= MAX_VERIFIED_TOKENS) {
+      verifiedTokens.delete(verifiedTokens.keys().next().value);
+    }
+  }
+
+  verifiedTokens.set(idToken, { account, expiresAt });
+  return account;
 }
 
 /**

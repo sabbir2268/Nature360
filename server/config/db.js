@@ -74,6 +74,10 @@ export async function connectDB() {
     await mongoose.connect(uri, {
       dbName: process.env.MONGODB_DB || undefined,
       serverSelectionTimeoutMS: 10000,
+      maxPoolSize: 20,
+      minPoolSize: 0,
+      socketTimeoutMS: 45000,
+      retryWrites: true,
     });
 
     console.log(`MongoDB connected (database: ${mongoose.connection.name})`);

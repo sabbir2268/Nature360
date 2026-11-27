@@ -1,0 +1,23 @@
+import { lazy } from "react";
+
+export const Home = lazy(() => import("../features/home/pages/Home"));
+export const Login = lazy(() => import("../features/auth/pages/Login"));
+export const Register = lazy(() => import("../features/auth/pages/Register"));
+export const Overview = lazy(() => import("../features/profile/pages/Overview"));
+export const CreatePost = lazy(() => import("../features/posts/pages/CreatePost"));
+export const EditPost = lazy(() => import("../features/posts/pages/EditPost"));
+export const TrackPost = lazy(() => import("../features/posts/pages/TrackPost"));
+export const PostDetails = lazy(() => import("../features/posts/pages/PostDetails"));
+export const ComplaintQueue = lazy(() => import("../features/officer/pages/ComplaintQueue"));
+export const ComplaintWorkspace = lazy(() => import("../features/officer/pages/ComplaintWorkspace"));
+export const AssignedCases = lazy(() => import("../features/volunteer/pages/AssignedCases"));
+export const InvestigationWorkspace = lazy(() => import("../features/volunteer/pages/InvestigationWorkspace"));
+export const HotspotMapPage = lazy(() => import("../features/intelligence/pages/HotspotMapPage"));
+export const AnalyticsPage = lazy(() => import("../features/intelligence/pages/AnalyticsPage"));
+export const AlertsPage = lazy(() => import("../features/intelligence/pages/AlertsPage"));
+export const HotspotIntelligencePage = lazy(() => import("../features/intelligence/pages/HotspotIntelligencePage"));
+export const NotificationsPage = lazy(() => import("../features/notifications/pages/NotificationsPage"));
+export const SettingsPage = lazy(() => import("../features/settings/pages/SettingsPage"));
+export const AdminUsers = lazy(() => import("../features/admin/pages/AdminUsers"));
+export const AdminConfig = lazy(() => import("../features/admin/pages/AdminConfig"));
+export const AdminAudit = lazy(() => import("../features/admin/pages/AdminAudit"));

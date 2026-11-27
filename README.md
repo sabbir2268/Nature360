@@ -159,3 +159,8 @@ Statuses: `Submitted -> Under Review -> Verified -> Investigation -> Action Take
 npm run lint
 npm run build
 ```
+
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for a step-by-step guide to deploying the web app
+on Vercel, the API on Render, and connecting MongoDB Atlas and Firebase.

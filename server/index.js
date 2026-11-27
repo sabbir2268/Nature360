@@ -1,5 +1,6 @@
 import "./config/env.js";
 
+import compression from "compression";
 import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
@@ -38,10 +39,13 @@ function corsOrigin(origin, callback) {
 const app = express();
 
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
+app.use(compression());
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: "25mb" }));
 
 app.get("/api/health", (req, res) => {
+  res.set("Cache-Control", "no-store");
   res.json({
     ok: true,
     service: "nature360-api",
